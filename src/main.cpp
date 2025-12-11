@@ -10,13 +10,11 @@ void COAPResponse(CoapPacket &packet, IPAddress ip, int port);
 
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port);
 
-
 Coap coap(Udp);
 
-void sendTemp(){
+void sendTemp()
+{
   int id = coap.put(IPAddress(10, 42, 0, 1), 4832, "temp/n02", "42");
-  int id2 = coap.put(IPAddress(10, 42, 0, 183), 4832, "ac/n02", "412");
-
 }
 
 void setup()
@@ -34,13 +32,15 @@ void setup()
 
   Udp.begin(localUdpPort);
   Serial.print("UDPBeginned");
-
+  coap.start(localUdpPort);
   coap.server(myCOAPCallback, "ac/n02");
   Serial.print("Coaped");
 
-  coap.start();
   coap.response(COAPResponse);
   Serial.print("coap started");
+
+  coap.put(IPAddress(10, 42, 0, 1), 4832, "addr/n02", "183");
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop()
@@ -54,10 +54,24 @@ void loop()
 
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port)
 {
-  Serial.println("Macron EXEPLOSION");
-  // Serial.println(packet.payload[0]);
+  Serial.println("Macron EXPLOSION");
+
+  if (packet.payloadlen > 0)
+  {
+    char firstChar = (char)packet.payload[0];
+
+    if (firstChar == '1')
+    {
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+    else if (firstChar == '0')
+    {
+      digitalWrite(LED_BUILTIN, HIGH);
+    }
+  }
 }
 
-void COAPResponse(CoapPacket &packet, IPAddress ip, int port) {
+void COAPResponse(CoapPacket &packet, IPAddress ip, int port)
+{
   Serial.println("Received CoAP response");
 }
