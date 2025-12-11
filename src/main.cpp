@@ -1,29 +1,63 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-// put function declarations here:
-int myFunction(int, int);
+#include <WiFiUdp.h>
+#include <coap-simple.h>
+
+WiFiUDP Udp;
+int localUdpPort = 4832;
+
+void COAPResponse(CoapPacket &packet, IPAddress ip, int port);
+
+void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port);
+
+
+Coap coap(Udp);
+
+void sendTemp(){
+  int id = coap.put(IPAddress(10, 42, 0, 1), 4832, "temp/n02", "42");
+  int id2 = coap.put(IPAddress(10, 42, 0, 183), 4832, "ac/n02", "412");
+
+}
 
 void setup()
 {
   Serial.begin(115200);
   Serial.printf("helloWorld");
-  WiFi.begin("AndroidAP2288", "evoooooo");
+
+  WiFi.begin("rohan", "mkqJNZee");
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
     Serial.print(".");
   }
   Serial.print("connected");
-  // int result = myFunction(2, 3);
+
+  Udp.begin(localUdpPort);
+  Serial.print("UDPBeginned");
+
+  coap.server(myCOAPCallback, "ac/n02");
+  Serial.print("Coaped");
+
+  coap.start();
+  coap.response(COAPResponse);
+  Serial.print("coap started");
 }
 
 void loop()
 {
-  // put your main code here, to run repeatedly:
+  coap.loop();
+  delay(5000);
+  sendTemp();
+  Serial.print("messageenoyed");
+  Serial.println(WiFi.localIP());
 }
 
-// put function definitions here:
-int myFunction(int x, int y)
+void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port)
 {
-  return x + y;
+  Serial.println("Macron EXEPLOSION");
+  // Serial.println(packet.payload[0]);
+}
+
+void COAPResponse(CoapPacket &packet, IPAddress ip, int port) {
+  Serial.println("Received CoAP response");
 }
