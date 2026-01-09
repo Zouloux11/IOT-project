@@ -26,7 +26,7 @@ type Variables struct {
 
 	HealthEnabled bool `env:"FM_HEALTH_ENABLED" envDefault:"true"`
 
-	NATSURL string `env:"FM_NATS_URL,required" envDefault:"nats://nats:4222"`
+	NATSURL string `env:"FM_NATS_URL,required" envDefault:"nats://nats_iot:4222"`
 
 	LoungeUpClientHTTPTimeout time.Duration `env:"GP_LOUNGEUP_CLIENT_HTTP_TIMEOUT" envDefault:"2s"`
 	LoungeUpClientNATSTimeout time.Duration `env:"GP_LOUNGEUP_CLIENT_NATS_TIMEOUT" envDefault:"10s"`
