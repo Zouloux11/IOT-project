@@ -33,7 +33,7 @@ services:
       - frontend-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.resgate.rule=Host(`api.loiccapdeville.fr`)"
+      - "traefik.http.routers.resgate.rule=Host(`api.iot.loiccapdeville.fr`)"
       - "traefik.http.routers.resgate.entrypoints=websecure"
       - "traefik.http.services.resgate.loadbalancer.server.port=8080"
       - "traefik.http.routers.resgate.tls=true"

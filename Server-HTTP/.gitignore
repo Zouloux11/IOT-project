@@ -17,3 +17,5 @@ build/
 .vscode/
 
 sqlboiler.toml
+
+node_modules/
