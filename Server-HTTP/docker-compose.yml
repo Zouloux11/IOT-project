@@ -1,0 +1,133 @@
+services:
+  nats_IOT:
+    image: nats:latest
+    container_name: nats_IOT
+    command: "-c /etc/nats/nats.conf -m 8222"
+    ports:
+      - 4222:4222
+      - 8222:8222
+    volumes:
+      - ./nats/:/etc/nats
+    healthcheck:
+      test: ["CMD", "nats-server", "--signal", "STOP"]
+      interval: 10s
+      retries: 5
+    networks:
+      - backend-network
+
+  resgate_IOT:
+    image: resgateio/resgate:latest
+    platform: linux/amd64
+    container_name: resgate_IOT
+    command:
+      - --DV
+      - --nats=nats://nats:4222
+    ports:
+      - "8880:8080"
+    environment:
+      - RES_CORS=*
+    depends_on:
+      - nats
+      - traefik
+    networks:
+      - backend-network
+      - frontend-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.resgate.rule=Host(`api.loiccapdeville.fr`)"
+      - "traefik.http.routers.resgate.entrypoints=websecure"
+      - "traefik.http.services.resgate.loadbalancer.server.port=8080"
+      - "traefik.http.routers.resgate.tls=true"
+      - "traefik.http.routers.resgate.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.resgate.middlewares=resgate"
+
+      - "traefik.http.middlewares.resgate.headers.accessControlAllowOriginlist=*"
+      - "traefik.http.middlewares.resgate.headers.accessControlAllowHeaders=*"
+      - "traefik.http.middlewares.resgate.headers.accessControlAllowMethods=GET, POST, PUT, DELETE, OPTIONS"
+      - "traefik.http.middlewares.resgate.headers.accessControlAllowCredentials=true"
+
+      - "traefik.http.middlewares.gateway.headers.accessControlExposeHeaders=Location"
+
+      - "traefik.docker.network=frontend-network"
+    restart: unless-stopped
+
+  # traefik:
+  #   image: traefik:v2.11
+  #   container_name: traefik
+  #   restart: unless-stopped
+  #   command:
+  #     - "--api.dashboard=true"
+  #     - "--api.insecure=false"
+  #     - "--entrypoints.web.address=:80"
+  #     - "--entrypoints.websecure.address=:443"
+  #     - "--providers.docker=true"
+  #     - "--providers.docker.exposedbydefault=false"
+  #     - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+  #     - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
+  #     - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+  #     # NOUVEAU : Activation des logs d'accès
+  #     - "--accesslog=true"
+  #     - "--accesslog.filepath=/var/log/traefik/access.log"
+  #     - "--accesslog.format=json"
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  #     - "./letsencrypt:/letsencrypt"
+  #     # NOUVEAU : Volume pour les logs
+  #     - "./traefik-logs:/var/log/traefik"
+  #   networks:
+  #     - frontend-network
+
+  backend_IOT:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend_IOT
+    ports:
+      - "8083:8083"
+    depends_on:
+      - nats
+    networks:
+      - backend-network
+    restart: always
+
+  frontend_IOT:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend_IOT
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.services.frontend.loadbalancer.server.port=5173"
+    networks:
+      - frontend-network
+
+  db_IOT:
+    image: postgres:latest
+    container_name: db_IOT
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_data_IOT:/var/lib/postgresql/data
+      - ./DB.sql:/docker-entrypoint-initdb.d/DB.sql
+    ports:
+      - "5732:5432"
+    networks:
+      - backend-network
+
+volumes:
+  db_data_IOT:
+
+networks:
+  frontend-network:
+    external: true
+  backend-network:
+    driver: bridge

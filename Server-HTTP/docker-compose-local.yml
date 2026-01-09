@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend-local
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_DOMAIN=${DOMAIN}
+      - VITE_EMAIL=${EMAIL}
+    networks:
+      - web
+
+networks:
+  web:
+    external: false

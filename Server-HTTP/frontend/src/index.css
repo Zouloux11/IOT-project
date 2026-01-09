@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 11%;
+    /* Dark Blueish Black */
+    --foreground: 210 40% 98%;
+    /* Almost White */
+
+    --card: 222 47% 14%;
+    /* Slightly Lighter Dark Blue */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 173 96% 35%;
+    /* Vibrant Teal */
+    --primary-foreground: 222 47% 11%;
+    /* Dark for text on primary */
+
+    --secondary: 217 33% 50%;
+    /* Muted Blue */
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 222 47% 20%;
+    /* Darker Muted Blue/Gray */
+    --muted-foreground: 210 40% 60%;
+    /* Lighter Gray for muted text */
+
+    --accent: 198 93% 60%;
+    /* Bright Sky Blue */
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 47% 25%;
+    /* Border for dark theme */
+    --input: 222 47% 25%;
+    --ring: 173 96% 45%;
+    /* Ring color based on primary */
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    /* Using Inter for a modern feel */
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold tracking-tight;
+  }
+
+  h1 {
+    @apply text-5xl;
+  }
+
+  h2 {
+    @apply text-4xl;
+  }
+
+  h3 {
+    @apply text-3xl;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.7);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary));
+  }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+.gradient-text {
+  @apply bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent;
+}

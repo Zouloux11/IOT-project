@@ -14,7 +14,7 @@ Coap coap(Udp);
 
 void sendTemp()
 {
-  int id = coap.put(IPAddress(10, 42, 0, 1), 4832, "temp/n02", "42");
+  int id = coap.put(IPAddress(192, 168, 52, 241), 4832, "ping", "Je te pong");
 }
 
 void setup()
@@ -22,7 +22,7 @@ void setup()
   Serial.begin(115200);
   Serial.printf("helloWorld");
 
-  WiFi.begin("rohan", "mkqJNZee");
+  WiFi.begin("AndroidAP2288", "evoooooo");
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
@@ -39,8 +39,8 @@ void setup()
   coap.response(COAPResponse);
   Serial.print("coap started");
 
-  coap.put(IPAddress(10, 42, 0, 1), 4832, "addr/n02", "183");
   pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void loop()
@@ -54,21 +54,21 @@ void loop()
 
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port)
 {
-  Serial.println("Macron EXPLOSION");
+  Serial.println("myCOAPCallback UwU");
 
-  if (packet.payloadlen > 0)
-  {
-    char firstChar = (char)packet.payload[0];
+  // if (packet.payloadlen > 0)
+  // {
+  //   char firstChar = (char)packet.payload[0];
 
-    if (firstChar == '1')
-    {
-      digitalWrite(LED_BUILTIN, LOW);
-    }
-    else if (firstChar == '0')
-    {
-      digitalWrite(LED_BUILTIN, HIGH);
-    }
-  }
+  //   if (firstChar == '1')
+  //   {
+  //     digitalWrite(LED_BUILTIN, LOW);
+  //   }
+  //   else if (firstChar == '0')
+  //   {
+  //     digitalWrite(LED_BUILTIN, HIGH);
+  //   }
+  // }
 }
 
 void COAPResponse(CoapPacket &packet, IPAddress ip, int port)
