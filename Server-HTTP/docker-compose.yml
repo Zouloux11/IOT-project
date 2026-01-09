@@ -1,7 +1,7 @@
 services:
-  nats_IOT:
+  nats_iot:
     image: nats:latest
-    container_name: nats_IOT
+    container_name: nats_iot
     command: "-c /etc/nats/nats.conf -m 8222"
     ports:
       - 4222:4222
@@ -15,10 +15,10 @@ services:
     networks:
       - backend-network
 
-  resgate_IOT:
+  resgate_iot:
     image: resgateio/resgate:latest
     platform: linux/amd64
-    container_name: resgate_IOT
+    container_name: resgate_iot
     command:
       - --DV
       - --nats=nats://nats:4222
@@ -27,7 +27,7 @@ services:
     environment:
       - RES_CORS=*
     depends_on:
-      - nats_IOT
+      - nats_iot
     networks:
       - backend-network
       - frontend-network
@@ -79,24 +79,24 @@ services:
   #   networks:
   #     - frontend-network
 
-  backend_IOT:
+  backend_iot:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: backend_IOT
+    container_name: backend_iot
     ports:
       - "8083:8083"
     depends_on:
-      - nats_IOT
+      - nats_iot
     networks:
       - backend-network
     restart: always
 
-  frontend_IOT:
+  frontend_iot:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: frontend_IOT
+    container_name: frontend_iot
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
@@ -107,15 +107,15 @@ services:
     networks:
       - frontend-network
 
-  db_IOT:
+  db_iot:
     image: postgres:latest
-    container_name: db_IOT
+    container_name: db_iot
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - db_data_IOT:/var/lib/postgresql/data
+      - db_data_iot:/var/lib/postgresql/data
       - ./DB.sql:/docker-entrypoint-initdb.d/DB.sql
     ports:
       - "5732:5432"
@@ -123,7 +123,7 @@ services:
       - backend-network
 
 volumes:
-  db_data_IOT:
+  db_data_iot:
 
 networks:
   frontend-network:
