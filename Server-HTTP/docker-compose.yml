@@ -27,8 +27,7 @@ services:
     environment:
       - RES_CORS=*
     depends_on:
-      - nats
-      - traefik
+      - nats_IOT
     networks:
       - backend-network
       - frontend-network
@@ -88,7 +87,7 @@ services:
     ports:
       - "8083:8083"
     depends_on:
-      - nats
+      - nats_IOT
     networks:
       - backend-network
     restart: always
