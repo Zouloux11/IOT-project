@@ -2,6 +2,11 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <coap-simple.h>
+#include <HCSR04.h>
+
+const byte triggerPin = 16;
+const byte echoPin = 0;
+UltraSonicDistanceSensor distanceSensor(triggerPin, echoPin);
 
 WiFiUDP Udp;
 int localUdpPort = 4832;
@@ -14,12 +19,15 @@ Coap coap(Udp);
 
 void sendTemp()
 {
+  float distance = distanceSensor.measureDistanceCm();
+  Serial.println(distance);
   int id = coap.put(IPAddress(192, 168, 52, 241), 4832, "ping", "Je te pong");
 }
 
 void setup()
 {
   Serial.begin(115200);
+  delay(5000);
   Serial.printf("helloWorld");
 
   WiFi.begin("AndroidAP2288", "evoooooo");
@@ -47,6 +55,7 @@ void loop()
 {
   coap.loop();
   delay(5000);
+
   sendTemp();
   Serial.print("messageenoyed");
   Serial.println(WiFi.localIP());
