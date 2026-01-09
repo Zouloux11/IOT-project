@@ -20,9 +20,9 @@ import (
 type Variables struct {
 	DBHost     string `env:"DB_HOST,required" envDefault:"localhost"`
 	DBPort     string `env:"DB_PORT,required" envDefault:"5437"`
-	DBName     string `env:"DB_NAME,required" envDefault:"scoresmanager"`
-	DBUser     string `env:"DB_USER,required" envDefault:"scoresmanager"`
-	DBPassword string `env:"DB_PASSWORD,required" envDefault:"scoresmanager"`
+	DBName     string `env:"DB_NAME,required" envDefault:"sensormanager"`
+	DBUser     string `env:"DB_USER,required" envDefault:"sensormanager"`
+	DBPassword string `env:"DB_PASSWORD,required" envDefault:"sensormanager"`
 
 	HealthEnabled bool `env:"FM_HEALTH_ENABLED" envDefault:"true"`
 

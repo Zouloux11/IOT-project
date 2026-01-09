@@ -3,11 +3,11 @@ package store
 import (
 	"database/sql"
 	"fmt"
-	"scoresmanager"
+	"sensormanager"
 )
 
 type Store struct {
-	Games scoresmanager.ScoresManager
+	Sensors sensormanager.SensorManager
 
 	db *sql.DB
 }
@@ -17,7 +17,7 @@ type Option func(*Store) error
 func New(options ...Option) *Store {
 	result := &Store{}
 
-	result.Games = &gamesStore{baseStore: result}
+	result.Sensors = &sensorsStore{baseStore: result}
 
 	for _, option := range options {
 		if err := option(result); err != nil {

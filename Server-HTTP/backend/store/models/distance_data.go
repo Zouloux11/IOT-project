@@ -75,6 +75,7 @@ func (w whereHelperint64) IN(slice []int64) qm.QueryMod {
 	}
 	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
 }
+
 func (w whereHelperint64) NIN(slice []int64) qm.QueryMod {
 	values := make([]interface{}, 0, len(slice))
 	for _, value := range slice {
@@ -102,6 +103,7 @@ func (w whereHelperstring) IN(slice []string) qm.QueryMod {
 	}
 	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
 }
+
 func (w whereHelperstring) NIN(slice []string) qm.QueryMod {
 	values := make([]interface{}, 0, len(slice))
 	for _, value := range slice {
@@ -115,18 +117,23 @@ type whereHelpertypes_Decimal struct{ field string }
 func (w whereHelpertypes_Decimal) EQ(x types.Decimal) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.EQ, x)
 }
+
 func (w whereHelpertypes_Decimal) NEQ(x types.Decimal) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.NEQ, x)
 }
+
 func (w whereHelpertypes_Decimal) LT(x types.Decimal) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.LT, x)
 }
+
 func (w whereHelpertypes_Decimal) LTE(x types.Decimal) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.LTE, x)
 }
+
 func (w whereHelpertypes_Decimal) GT(x types.Decimal) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GT, x)
 }
+
 func (w whereHelpertypes_Decimal) GTE(x types.Decimal) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GTE, x)
 }
@@ -136,18 +143,23 @@ type whereHelpernull_Time struct{ field string }
 func (w whereHelpernull_Time) EQ(x null.Time) qm.QueryMod {
 	return qmhelper.WhereNullEQ(w.field, false, x)
 }
+
 func (w whereHelpernull_Time) NEQ(x null.Time) qm.QueryMod {
 	return qmhelper.WhereNullEQ(w.field, true, x)
 }
+
 func (w whereHelpernull_Time) LT(x null.Time) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.LT, x)
 }
+
 func (w whereHelpernull_Time) LTE(x null.Time) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.LTE, x)
 }
+
 func (w whereHelpernull_Time) GT(x null.Time) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GT, x)
 }
+
 func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GTE, x)
 }
@@ -168,12 +180,10 @@ var DistanceDatumWhere = struct {
 }
 
 // DistanceDatumRels is where relationship names are stored.
-var DistanceDatumRels = struct {
-}{}
+var DistanceDatumRels = struct{}{}
 
 // distanceDatumR is where relationships are stored.
-type distanceDatumR struct {
-}
+type distanceDatumR struct{}
 
 // NewStruct creates a new relationship struct
 func (*distanceDatumR) NewStruct() *distanceDatumR {
@@ -224,28 +234,38 @@ var (
 	_ = qmhelper.Where
 )
 
-var distanceDatumAfterSelectMu sync.Mutex
-var distanceDatumAfterSelectHooks []DistanceDatumHook
+var (
+	distanceDatumAfterSelectMu    sync.Mutex
+	distanceDatumAfterSelectHooks []DistanceDatumHook
+)
 
-var distanceDatumBeforeInsertMu sync.Mutex
-var distanceDatumBeforeInsertHooks []DistanceDatumHook
-var distanceDatumAfterInsertMu sync.Mutex
-var distanceDatumAfterInsertHooks []DistanceDatumHook
+var (
+	distanceDatumBeforeInsertMu    sync.Mutex
+	distanceDatumBeforeInsertHooks []DistanceDatumHook
+	distanceDatumAfterInsertMu     sync.Mutex
+	distanceDatumAfterInsertHooks  []DistanceDatumHook
+)
 
-var distanceDatumBeforeUpdateMu sync.Mutex
-var distanceDatumBeforeUpdateHooks []DistanceDatumHook
-var distanceDatumAfterUpdateMu sync.Mutex
-var distanceDatumAfterUpdateHooks []DistanceDatumHook
+var (
+	distanceDatumBeforeUpdateMu    sync.Mutex
+	distanceDatumBeforeUpdateHooks []DistanceDatumHook
+	distanceDatumAfterUpdateMu     sync.Mutex
+	distanceDatumAfterUpdateHooks  []DistanceDatumHook
+)
 
-var distanceDatumBeforeDeleteMu sync.Mutex
-var distanceDatumBeforeDeleteHooks []DistanceDatumHook
-var distanceDatumAfterDeleteMu sync.Mutex
-var distanceDatumAfterDeleteHooks []DistanceDatumHook
+var (
+	distanceDatumBeforeDeleteMu    sync.Mutex
+	distanceDatumBeforeDeleteHooks []DistanceDatumHook
+	distanceDatumAfterDeleteMu     sync.Mutex
+	distanceDatumAfterDeleteHooks  []DistanceDatumHook
+)
 
-var distanceDatumBeforeUpsertMu sync.Mutex
-var distanceDatumBeforeUpsertHooks []DistanceDatumHook
-var distanceDatumAfterUpsertMu sync.Mutex
-var distanceDatumAfterUpsertHooks []DistanceDatumHook
+var (
+	distanceDatumBeforeUpsertMu    sync.Mutex
+	distanceDatumBeforeUpsertHooks []DistanceDatumHook
+	distanceDatumAfterUpsertMu     sync.Mutex
+	distanceDatumAfterUpsertHooks  []DistanceDatumHook
+)
 
 // doAfterSelectHooks executes all "after Select" hooks.
 func (o *DistanceDatum) doAfterSelectHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {

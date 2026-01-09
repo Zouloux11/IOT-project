@@ -28,7 +28,7 @@ const ReactionGame = () => {
   const timeoutRef = useRef(null);
 
   // API Configuration
-  const API_BASE_URL = 'https://api.loiccapdeville.fr/api/scoresmanager';
+  const API_BASE_URL = 'https://api.loiccapdeville.fr/api/sensormanager';
   const GAME_TYPE = 'reaction';
 
   // Load leaderboard on startup

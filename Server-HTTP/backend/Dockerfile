@@ -7,7 +7,7 @@ COPY .env /app/.env
 
 RUN go mod download
 
-RUN go build -o /app/scoresmanager cmd/server/main.go
+RUN go build -o /app/sensormanager cmd/server/main.go
 
-CMD ["/app/scoresmanager"]
+CMD ["/app/sensormanager"]
 

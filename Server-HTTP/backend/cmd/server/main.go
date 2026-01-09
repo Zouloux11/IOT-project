@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	_ "net/http/pprof"
-
-	"scoresmanager/environment"
-	"scoresmanager/server"
-	"scoresmanager/store"
+	"sensormanager/environment"
+	"sensormanager/server"
+	"sensormanager/store"
 
 	"github.com/jirenius/go-res"
 	"github.com/loungeup/go-loungeup/pkg/log"
@@ -25,7 +24,7 @@ func main() {
 	defer natsConn.Close()
 
 	fmt.Println("Connected to NATS")
-	service := res.NewService("scoresmanager").
+	service := res.NewService("sensormanager").
 		SetInChannelSize(variables.ServiceInChannelSize).
 		SetLogger(log.Default().Adapter).
 		SetWorkerCount(variables.ServiceWorkerCount)

@@ -1,7 +1,7 @@
 package server
 
 import (
-	"scoresmanager/store"
+	"sensormanager/store"
 
 	"github.com/jirenius/go-res"
 )
@@ -14,9 +14,7 @@ type Server struct {
 type Option func(*Server)
 
 func New(options ...Option) *Server {
-	result := &Server{
-		//...
-	}
+	result := &Server{}
 
 	for _, option := range options {
 		option(result)
@@ -40,7 +38,7 @@ func WithService(service *res.Service) Option { return func(s *Server) { s.servi
 func WithStore(store *store.Store) Option { return func(s *Server) { s.store = store } }
 
 func (s *Server) addRESHandlers() {
-	s.addScoreHandler()
-	s.addLeaderboardHandler()
-	s.addPlayerStatsHandler()
+	s.addMicrophoneHandler()
+	s.addDistanceHandler()
+	s.addMotionHandler()
 }
