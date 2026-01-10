@@ -33,19 +33,20 @@ func (ns *notificationsStore) RegisterPushToken(params *sensormanager.PushTokenP
 
 	if err == nil {
 		// Token existe, le réactiver
-		existingToken.IsActive = true
-		existingToken.UpdatedAt = time.Now()
-		if err := existingToken.Update(context.TODO(), ns.baseStore.db, boil.Infer()); err != nil {
-			return nil, errors.MapSQLError(err)
+		existingToken.IsActive = null.BoolFrom(true)
+		existingToken.UpdatedAt = null.TimeFrom(time.Now())
+		_, updateErr := existingToken.Update(context.TODO(), ns.baseStore.db, boil.Infer())
+		if updateErr != nil {
+			return nil, errors.MapSQLError(updateErr)
 		}
 
 		return &sensormanager.PushToken{
 			ID:        existingToken.ID,
 			Token:     existingToken.Token,
 			Platform:  sensormanager.Platform(existingToken.Platform),
-			IsActive:  existingToken.IsActive,
-			CreatedAt: existingToken.CreatedAt,
-			UpdatedAt: existingToken.UpdatedAt,
+			IsActive:  existingToken.IsActive.Bool,
+			CreatedAt: existingToken.CreatedAt.Time,
+			UpdatedAt: existingToken.UpdatedAt.Time,
 		}, nil
 	}
 
@@ -55,9 +56,9 @@ func (ns *notificationsStore) RegisterPushToken(params *sensormanager.PushTokenP
 		Token:      params.Token,
 		Platform:   params.Platform,
 		DeviceInfo: null.JSONFrom(deviceInfoJSON),
-		IsActive:   true,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		IsActive:   null.BoolFrom(true),
+		CreatedAt:  null.TimeFrom(time.Now()),
+		UpdatedAt:  null.TimeFrom(time.Now()),
 	}
 
 	if err := model.Insert(context.TODO(), ns.baseStore.db, boil.Infer()); err != nil {
@@ -68,15 +69,15 @@ func (ns *notificationsStore) RegisterPushToken(params *sensormanager.PushTokenP
 		ID:        model.ID,
 		Token:     model.Token,
 		Platform:  sensormanager.Platform(model.Platform),
-		IsActive:  model.IsActive,
-		CreatedAt: model.CreatedAt,
-		UpdatedAt: model.UpdatedAt,
+		IsActive:  model.IsActive.Bool,
+		CreatedAt: model.CreatedAt.Time,
+		UpdatedAt: model.UpdatedAt.Time,
 	}, nil
 }
 
 func (ns *notificationsStore) GetActivePushTokens() ([]*sensormanager.PushToken, error) {
 	modelsDB, err := models.PushTokens(
-		models.PushTokenWhere.IsActive.EQ(true),
+		models.PushTokenWhere.IsActive.EQ(null.BoolFrom(true)),
 		qm.OrderBy(fmt.Sprintf("%s DESC", models.PushTokenColumns.CreatedAt)),
 	).All(context.TODO(), ns.baseStore.db)
 	if err != nil {
@@ -89,9 +90,9 @@ func (ns *notificationsStore) GetActivePushTokens() ([]*sensormanager.PushToken,
 			ID:        m.ID,
 			Token:     m.Token,
 			Platform:  sensormanager.Platform(m.Platform),
-			IsActive:  m.IsActive,
-			CreatedAt: m.CreatedAt,
-			UpdatedAt: m.UpdatedAt,
+			IsActive:  m.IsActive.Bool,
+			CreatedAt: m.CreatedAt.Time,
+			UpdatedAt: m.UpdatedAt.Time,
 		}
 	}
 
@@ -102,29 +103,10 @@ func (ns *notificationsStore) DeactivatePushToken(token string) error {
 	_, err := models.PushTokens(
 		models.PushTokenWhere.Token.EQ(token),
 	).UpdateAll(context.TODO(), ns.baseStore.db, models.M{
-		models.PushTokenColumns.IsActive:  false,
-		models.PushTokenColumns.UpdatedAt: time.Now(),
+		models.PushTokenColumns.IsActive:  null.BoolFrom(false),
+		models.PushTokenColumns.UpdatedAt: null.TimeFrom(time.Now()),
 	})
 	if err != nil {
-		return errors.MapSQLError(err)
-	}
-
-	return nil
-}
-
-func (ns *notificationsStore) LogNotification(log *sensormanager.NotificationLog) error {
-	dataJSON, _ := json.Marshal(log.Data)
-	model := &models.NotificationLog{
-		PushTokenID:  log.PushTokenID,
-		Title:        log.Title,
-		Body:         log.Body,
-		Data:         null.JSONFrom(dataJSON),
-		SentAt:       time.Now(),
-		Success:      log.Success,
-		ErrorMessage: log.ErrorMessage,
-	}
-
-	if err := model.Insert(context.TODO(), ns.baseStore.db, boil.Infer()); err != nil {
 		return errors.MapSQLError(err)
 	}
 
@@ -171,7 +153,6 @@ func (ns *notificationsStore) sendExpoNotification(token *sensormanager.PushToke
 
 	if err != nil {
 		log.ErrorMessage = null.StringFrom(err.Error())
-		ns.LogNotification(log)
 		return
 	}
 	defer resp.Body.Close()
@@ -179,10 +160,8 @@ func (ns *notificationsStore) sendExpoNotification(token *sensormanager.PushToke
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != 200 {
 		log.ErrorMessage = null.StringFrom(string(body))
-		ns.LogNotification(log)
 		return
 	}
 
 	log.Success = true
-	ns.LogNotification(log)
 }

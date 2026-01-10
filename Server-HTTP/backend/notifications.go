@@ -74,6 +74,5 @@ type NotificationManager interface {
 	RegisterPushToken(params *PushTokenParams) (*PushToken, error)
 	GetActivePushTokens() ([]*PushToken, error)
 	DeactivatePushToken(token string) error
-	LogNotification(log *NotificationLog) error
 	SendNotificationToAll(params *NotificationParams) error
 }

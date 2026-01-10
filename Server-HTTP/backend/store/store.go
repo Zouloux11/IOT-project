@@ -7,7 +7,8 @@ import (
 )
 
 type Store struct {
-	Sensors sensormanager.SensorManager
+	Sensors       sensormanager.SensorManager
+	Notifications sensormanager.NotificationManager
 
 	db *sql.DB
 }
@@ -18,6 +19,7 @@ func New(options ...Option) *Store {
 	result := &Store{}
 
 	result.Sensors = &sensorsStore{baseStore: result}
+	result.Notifications = &notificationsStore{baseStore: result}
 
 	for _, option := range options {
 		if err := option(result); err != nil {

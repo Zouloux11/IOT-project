@@ -35,3 +35,14 @@ type SensorReading struct {
 	Value      float64 `json:"value"`
 	RecordedAt string  `json:"recordedAt"`
 }
+
+type PushTokenParams struct {
+	PushToken string `json:"pushToken"`
+	Platform  string `json:"platform"`
+}
+
+type NotificationParams struct {
+	Title string                 `json:"title"`
+	Body  string                 `json:"body"`
+	Data  map[string]interface{} `json:"data"`
+}

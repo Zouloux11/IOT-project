@@ -33,6 +33,22 @@ func (p *distanceProvider) RecordData(request res.CallRequest) {
 		return
 	}
 
+	// 🔔 Envoyer une notification si alerte déclenchée
+	if alertResponse.Alert {
+		notifParams := &sensormanager.NotificationParams{
+			Title: "⚠️ Alerte Distance",
+			Body:  alertResponse.Message,
+			Data: map[string]interface{}{
+				"type":     "distance",
+				"deviceId": alertResponse.DeviceID,
+				"value":    alertResponse.Value,
+			},
+		}
+
+		// Envoi asynchrone pour ne pas bloquer la réponse
+		go p.server.store.Notifications.SendNotificationToAll(notifParams)
+	}
+
 	request.OK(&models.AlertResponseModel{
 		Alert:      alertResponse.Alert,
 		Message:    alertResponse.Message,

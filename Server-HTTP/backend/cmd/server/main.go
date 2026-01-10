@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	_ "net/http/pprof"
+	"sensormanager"
 	"sensormanager/environment"
 	"sensormanager/server"
 	"sensormanager/store"
@@ -34,6 +35,13 @@ func main() {
 	store := store.New(
 		store.WithDB(db),
 	)
+
+	store.Sensors.SetThreshold(&sensormanager.ThresholdConfig{
+		DeviceID:    "ESP_002",
+		SensorType:  sensormanager.SensorTypeDistance,
+		MinValue:    func() *float64 { v := 30.0; return &v }(),
+		CooldownSec: 0,
+	})
 
 	server.New(
 		server.WithService(service),
