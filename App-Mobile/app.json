@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "IoT Sensors",
+    "slug": "iot-sensors",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "iot",
+    "icon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+    "splash": {
+      "image": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a202c"
+    },
+    "notification": {
+      "icon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+      "color": "#f6ad55"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "fr.iot.mobile",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "icon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png"
+    },
+    "android": {
+      "package": "fr.iot.mobile",
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
+      "icon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+        "backgroundColor": "#1a202c"
+      },
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+          "color": "#f6ad55"
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b9d6f051-2235-44bc-a388-c6b36009a35a"
+      }
+    }
+  }
+}
