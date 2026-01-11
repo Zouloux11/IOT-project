@@ -43,18 +43,31 @@ export const sensorApi = {
     return response.json();
   },
 
+  // ✅ CHANGÉ : POST avec body JSON au lieu de GET avec URL
   getMicrophoneHistory: async (deviceId: string, limit: number = 20) => {
-    const response = await fetch(`${API_BASE_URL}/sensor/microphone/${deviceId}/history?limit=${limit}`);
+    const response = await fetch(`${API_BASE_URL}/sensor/microphone/history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId, limit }),
+    });
     return response.json();
   },
 
   getDistanceHistory: async (deviceId: string, limit: number = 20) => {
-    const response = await fetch(`${API_BASE_URL}/sensor/distance/${deviceId}/history?limit=${limit}`);
+    const response = await fetch(`${API_BASE_URL}/sensor/distance/history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId, limit }),
+    });
     return response.json();
   },
 
   getMotionHistory: async (deviceId: string, limit: number = 20) => {
-    const response = await fetch(`${API_BASE_URL}/sensor/motion/${deviceId}/history?limit=${limit}`);
+    const response = await fetch(`${API_BASE_URL}/sensor/motion/history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId, limit }),
+    });
     return response.json();
   },
 };

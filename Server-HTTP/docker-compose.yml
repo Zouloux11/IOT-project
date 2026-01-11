@@ -21,6 +21,8 @@ services:
     container_name: resgate_iot
     command:
       - --DV
+      - --headauth=none
+      - --alloworigin=* 
       - --nats=nats://nats_iot:4222
     ports:
       - "8880:8080"
