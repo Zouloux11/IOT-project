@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://api.iot.loiccapdeville.fr/api/sensormanager';
+const API_BASE_URL = 'https://api.loiccapdeville.fr/api/sensormanager';
 
 export interface SensorReading {
   deviceId: string;

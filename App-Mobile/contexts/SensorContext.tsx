@@ -35,14 +35,27 @@ export const SensorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         sensorApi.getMotionHistory('ESP_004', 20),
       ]);
 
-      setSensorData({
-        microphone: micData.data || [],
-        distance: distData.data || [],
-        motion: motionData.data || [],
-      });
-
+      // 🔥 CORRECTION : Mapper les données de l'API vers le format attendu
+setSensorData({
+  microphone: (Array.isArray(micData) ? micData : micData.data || []).map((d: any) => ({
+    value: d.decibelDb,
+    recordedAt: d.recordedAt,
+  })),
+  distance: (Array.isArray(distData) ? distData : distData.data || []).map((d: any) => ({
+    value: d.distanceCm,
+    recordedAt: d.recordedAt,
+  })),
+  motion: (Array.isArray(motionData) ? motionData : motionData.data || []).map((d: any) => ({
+    value: d.motionDetected,
+    recordedAt: d.recordedAt,
+  })),
+});
       // Générer des alertes locales si nécessaire
-      checkForAlerts(micData.data || [], distData.data || [], motionData.data || []);
+      checkForAlerts(
+        (micData.data || []).map((d: any) => ({ value: d.decibelDb, recordedAt: d.recordedAt })),
+        (distData.data || []).map((d: any) => ({ value: d.distanceCm, recordedAt: d.recordedAt })),
+        (motionData.data || []).map((d: any) => ({ value: d.motionDetected, recordedAt: d.recordedAt }))
+      );
     } catch (error) {
       console.error('Error fetching sensor data:', error);
     } finally {
@@ -50,7 +63,11 @@ export const SensorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const checkForAlerts = (mic: any[], dist: any[], motion: any[]) => {
+  const checkForAlerts = (
+    mic: { value: number; recordedAt: string }[],
+    dist: { value: number; recordedAt: string }[],
+    motion: { value: boolean; recordedAt: string }[]
+  ) => {
     const latestMic = mic[0];
     const latestDist = dist[0];
     const latestMotion = motion[0];
