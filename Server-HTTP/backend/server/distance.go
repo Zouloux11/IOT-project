@@ -13,6 +13,7 @@ func (s *Server) addDistanceHandler() {
 	s.service.Handle("sensor.distance",
 		res.Access(res.AccessGranted),
 		res.Call("record", provider.RecordData),
+		res.Call("history", provider.GetHistory),
 	)
 }
 
@@ -57,4 +58,35 @@ func (p *distanceProvider) RecordData(request res.CallRequest) {
 		DeviceID:   alertResponse.DeviceID,
 		RecordedAt: alertResponse.RecordedAt.Format("2006-01-02T15:04:05Z"),
 	})
+}
+
+func (p *distanceProvider) GetHistory(request res.CallRequest) {
+	var params struct {
+		DeviceID string `json:"deviceId"`
+		Limit    int    `json:"limit"`
+	}
+	request.ParseParams(&params)
+
+	if params.Limit == 0 {
+		params.Limit = 20
+	}
+
+	data, err := p.server.store.Sensors.GetDistanceHistory(params.DeviceID, params.Limit)
+	if err != nil {
+		request.Error(err)
+		return
+	}
+
+	// Convertir en format de réponse
+	result := make([]map[string]interface{}, len(data))
+	for i, d := range data {
+		result[i] = map[string]interface{}{
+			"id":         d.ID,
+			"deviceId":   d.DeviceID,
+			"distanceCm": d.DistanceCm,
+			"recordedAt": d.RecordedAt.Format("2006-01-02T15:04:05Z"),
+		}
+	}
+
+	request.OK(result)
 }

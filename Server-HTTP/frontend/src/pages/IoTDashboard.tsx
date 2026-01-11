@@ -34,7 +34,7 @@ const IoTDashboard = () => {
     
     // TODO: Replace with real API calls to your backend
     // Example:
-    // const micData = await fetch('https://api.iot.loiccapdeville.fr/sensor/microphone/ESP_001/history?limit=20');
+    // const micData = await fetch('http://api.iot.loiccapdeville.fr/sensor/microphone/ESP_001/history?limit=20');
     
     setTimeout(() => {
       setIsRefreshing(false);
