@@ -4,8 +4,8 @@
 #include <coap-simple.h>
 #include <HCSR04.h>
 
-const byte triggerPin = 16;
-const byte echoPin = 0;
+const byte triggerPin = 5; // D1
+const byte echoPin = 4;    // D2
 UltraSonicDistanceSensor distanceSensor(triggerPin, echoPin);
 
 WiFiUDP Udp;
@@ -19,15 +19,17 @@ Coap coap(Udp);
 
 void sendTemp()
 {
-  float distance = distanceSensor.measureDistanceCm();
-  Serial.println(distance);
-  int id = coap.put(IPAddress(192, 168, 52, 241), 4832, "ping", "Je te pong");
+  float distance1 = distanceSensor.measureDistanceCm();
+  Serial.println(distance1);
+  String distanceStr1 = String(distance1);
+
+  int id = coap.put(IPAddress(192, 168, 52, 241), 4832, "distance/ESP_002", distanceStr1.c_str());
 }
 
 void setup()
 {
   Serial.begin(115200);
-  delay(5000);
+  delay(1000);
   Serial.printf("helloWorld");
 
   WiFi.begin("AndroidAP2288", "evoooooo");
