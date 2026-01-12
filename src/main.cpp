@@ -4,33 +4,35 @@
 #include <coap-simple.h>
 #include <HCSR04.h>
 
-const byte triggerPin = 5; // D1
-const byte echoPin = 4;    // D2
+const byte triggerPin = 5;
+const byte echoPin = 4;
 UltraSonicDistanceSensor distanceSensor(triggerPin, echoPin);
 
 WiFiUDP Udp;
 int localUdpPort = 4832;
 
 void COAPResponse(CoapPacket &packet, IPAddress ip, int port);
-
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port);
 
 Coap coap(Udp);
 
-void sendTemp()
+void sendDistance()
 {
-  float distance1 = distanceSensor.measureDistanceCm();
-  Serial.println(distance1);
-  String distanceStr1 = String(distance1);
+  float distance = distanceSensor.measureDistanceCm();
 
-  int id = coap.put(IPAddress(192, 168, 52, 241), 4832, "distance/ESP_002", distanceStr1.c_str());
+  String payload = "{\"deviceId\":\"ESP_0069\",\"value\":" + String(distance, 2) + "}";
+
+  Serial.print("Sending: ");
+  Serial.println(payload);
+
+  int id = coap.put(IPAddress(192, 168, 52, 241), 4832, "distance", payload.c_str());
 }
 
 void setup()
 {
   Serial.begin(115200);
   delay(1000);
-  Serial.printf("helloWorld");
+  Serial.println("\nStarting...");
 
   WiFi.begin("AndroidAP2288", "evoooooo");
   while (WiFi.status() != WL_CONNECTED)
@@ -38,16 +40,17 @@ void setup()
     delay(500);
     Serial.print(".");
   }
-  Serial.print("connected");
+
+  Serial.println("\nConnected");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
 
   Udp.begin(localUdpPort);
-  Serial.print("UDPBeginned");
   coap.start(localUdpPort);
   coap.server(myCOAPCallback, "ac/n02");
-  Serial.print("Coaped");
-
   coap.response(COAPResponse);
-  Serial.print("coap started");
+
+  Serial.println("Ready");
 
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
@@ -57,32 +60,15 @@ void loop()
 {
   coap.loop();
   delay(5000);
-
-  sendTemp();
-  Serial.print("messageenoyed");
-  Serial.println(WiFi.localIP());
+  sendDistance();
 }
 
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port)
 {
-  Serial.println("myCOAPCallback UwU");
-
-  // if (packet.payloadlen > 0)
-  // {
-  //   char firstChar = (char)packet.payload[0];
-
-  //   if (firstChar == '1')
-  //   {
-  //     digitalWrite(LED_BUILTIN, LOW);
-  //   }
-  //   else if (firstChar == '0')
-  //   {
-  //     digitalWrite(LED_BUILTIN, HIGH);
-  //   }
-  // }
+  Serial.println("Callback");
 }
 
 void COAPResponse(CoapPacket &packet, IPAddress ip, int port)
 {
-  Serial.println("Received CoAP response");
+  Serial.println("Response received");
 }
