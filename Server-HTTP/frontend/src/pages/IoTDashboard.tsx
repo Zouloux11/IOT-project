@@ -163,8 +163,8 @@ const IoTDashboard = () => {
   useEffect(() => {
     refreshData();
     
-    // ✅ CORRIGÉ: 5000ms au lieu de 100ms !
-    const interval = setInterval(refreshData, 5000);
+
+    const interval = setInterval(refreshData, 500);
     
     return () => clearInterval(interval);
   }, []);
