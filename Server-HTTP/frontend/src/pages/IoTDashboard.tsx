@@ -164,7 +164,7 @@ const IoTDashboard = () => {
     refreshData();
     
 
-    const interval = setInterval(refreshData, 500);
+    const interval = setInterval(refreshData, 100);
     
     return () => clearInterval(interval);
   }, []);
