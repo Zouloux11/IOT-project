@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"math"
 	"sensormanager"
 	"sensormanager/store/models"
 	"time"
@@ -20,7 +21,23 @@ type sensorsStore struct{ baseStore *Store }
 
 var _ sensormanager.SensorManager = (*sensorsStore)(nil)
 
-// Microphone
+const (
+	MicrophoneThresholdDB        = 80.0
+	DistanceVariationThresholdCM = 30.0
+	AlertCooldownSeconds         = 30
+)
+
+type lastValue struct {
+	value         float64
+	timestamp     time.Time
+	lastTriggered time.Time
+}
+
+var (
+	lastDistances   = make(map[string]*lastValue)
+	lastMotions     = make(map[string]*lastValue)
+	lastMicrophones = make(map[string]*lastValue)
+)
 
 func (ss *sensorsStore) RecordMicrophone(params *sensormanager.MicrophoneParams) (*sensormanager.AlertResponse, error) {
 	if err := params.Sanitize(); err != nil {
@@ -37,7 +54,7 @@ func (ss *sensorsStore) RecordMicrophone(params *sensormanager.MicrophoneParams)
 		return nil, errors.MapSQLError(err)
 	}
 
-	return ss.checkThreshold(params.DeviceID, sensormanager.SensorTypeMicrophone, params.Decibels)
+	return ss.checkMicrophoneAlert(params.DeviceID, params.Decibels)
 }
 
 func (ss *sensorsStore) GetMicrophoneHistory(deviceID string, limit int) ([]*sensormanager.MicrophoneData, error) {
@@ -64,8 +81,6 @@ func (ss *sensorsStore) GetMicrophoneHistory(deviceID string, limit int) ([]*sen
 	return result, nil
 }
 
-// Distance
-
 func (ss *sensorsStore) RecordDistance(params *sensormanager.DistanceParams) (*sensormanager.AlertResponse, error) {
 	if err := params.Sanitize(); err != nil {
 		return nil, err
@@ -81,7 +96,7 @@ func (ss *sensorsStore) RecordDistance(params *sensormanager.DistanceParams) (*s
 		return nil, errors.MapSQLError(err)
 	}
 
-	return ss.checkThreshold(params.DeviceID, sensormanager.SensorTypeDistance, params.DistanceCm)
+	return ss.checkDistanceAlert(params.DeviceID, params.DistanceCm)
 }
 
 func (ss *sensorsStore) GetDistanceHistory(deviceID string, limit int) ([]*sensormanager.DistanceData, error) {
@@ -108,8 +123,6 @@ func (ss *sensorsStore) GetDistanceHistory(deviceID string, limit int) ([]*senso
 	return result, nil
 }
 
-// Motion
-
 func (ss *sensorsStore) RecordMotion(params *sensormanager.MotionParams) (*sensormanager.AlertResponse, error) {
 	if err := params.Sanitize(); err != nil {
 		return nil, err
@@ -125,12 +138,7 @@ func (ss *sensorsStore) RecordMotion(params *sensormanager.MotionParams) (*senso
 		return nil, errors.MapSQLError(err)
 	}
 
-	var value float64
-	if params.MotionDetected {
-		value = 1
-	}
-
-	return ss.checkThreshold(params.DeviceID, sensormanager.SensorTypeMotion, value)
+	return ss.checkMotionAlert(params.DeviceID, params.MotionDetected)
 }
 
 func (ss *sensorsStore) GetMotionHistory(deviceID string, limit int) ([]*sensormanager.MotionData, error) {
@@ -156,73 +164,134 @@ func (ss *sensorsStore) GetMotionHistory(deviceID string, limit int) ([]*sensorm
 	return result, nil
 }
 
-// Thresholds
+func (ss *sensorsStore) checkMicrophoneAlert(deviceID string, decibels float64) (*sensormanager.AlertResponse, error) {
+	now := time.Now()
 
-var thresholds = make(map[string]*sensormanager.ThresholdConfig)
-
-func (ss *sensorsStore) SetThreshold(config *sensormanager.ThresholdConfig) error {
-	key := config.DeviceID + "_" + string(config.SensorType)
-	thresholds[key] = config
-	return nil
-}
-
-func (ss *sensorsStore) GetThreshold(deviceID string, sensorType sensormanager.SensorType) (*sensormanager.ThresholdConfig, error) {
-	key := deviceID + "_" + string(sensorType)
-	config, ok := thresholds[key]
-	if !ok {
-		return nil, fmt.Errorf("no threshold configured for device %s and sensor %s", deviceID, sensorType)
-	}
-	return config, nil
-}
-
-func (ss *sensorsStore) checkThreshold(deviceID string, sensorType sensormanager.SensorType, value float64) (*sensormanager.AlertResponse, error) {
-	config, err := ss.GetThreshold(deviceID, sensorType)
-	if err != nil {
+	last, exists := lastMicrophones[deviceID]
+	if exists && now.Sub(last.lastTriggered).Seconds() < AlertCooldownSeconds {
 		return &sensormanager.AlertResponse{
 			Alert:      false,
+			Message:    "Cooldown active",
 			DeviceID:   deviceID,
-			Value:      value,
-			RecordedAt: time.Now(),
+			Value:      decibels,
+			RecordedAt: now,
 		}, nil
 	}
 
-	if config.LastTriggered.Valid {
-		cooldownEnd := config.LastTriggered.Time.Add(time.Duration(config.CooldownSec) * time.Second)
-		if time.Now().Before(cooldownEnd) {
-			return &sensormanager.AlertResponse{
-				Alert:      false,
-				Message:    "Cooldown active",
-				DeviceID:   deviceID,
-				Value:      value,
-				RecordedAt: time.Now(),
-			}, nil
+	if decibels >= MicrophoneThresholdDB {
+		if !exists {
+			lastMicrophones[deviceID] = &lastValue{}
 		}
-	}
+		lastMicrophones[deviceID].lastTriggered = now
 
-	alert := false
-	var message string
-	var thresholdValue float64
-
-	if config.MaxValue != nil && value > *config.MaxValue {
-		alert = true
-		thresholdValue = *config.MaxValue
-		message = fmt.Sprintf("Value %.2f exceeds maximum threshold %.2f", value, *config.MaxValue)
-		config.LastTriggered = null.TimeFrom(time.Now())
-	}
-
-	if config.MinValue != nil && value < *config.MinValue {
-		alert = true
-		thresholdValue = *config.MinValue
-		message = fmt.Sprintf("Value %.2f below minimum threshold %.2f", value, *config.MinValue)
-		config.LastTriggered = null.TimeFrom(time.Now())
+		return &sensormanager.AlertResponse{
+			Alert:      true,
+			Message:    fmt.Sprintf("High noise level detected: %.1f dB", decibels),
+			Value:      decibels,
+			Threshold:  MicrophoneThresholdDB,
+			DeviceID:   deviceID,
+			RecordedAt: now,
+		}, nil
 	}
 
 	return &sensormanager.AlertResponse{
-		Alert:      alert,
-		Message:    message,
-		Value:      value,
-		Threshold:  thresholdValue,
+		Alert:      false,
 		DeviceID:   deviceID,
-		RecordedAt: time.Now(),
+		Value:      decibels,
+		RecordedAt: now,
+	}, nil
+}
+
+func (ss *sensorsStore) checkDistanceAlert(deviceID string, distance float64) (*sensormanager.AlertResponse, error) {
+	now := time.Now()
+
+	last, exists := lastDistances[deviceID]
+	if !exists {
+		lastDistances[deviceID] = &lastValue{
+			value:     distance,
+			timestamp: now,
+		}
+		return &sensormanager.AlertResponse{
+			Alert:      false,
+			DeviceID:   deviceID,
+			Value:      distance,
+			RecordedAt: now,
+		}, nil
+	}
+
+	if now.Sub(last.lastTriggered).Seconds() < AlertCooldownSeconds {
+		last.value = distance
+		last.timestamp = now
+		return &sensormanager.AlertResponse{
+			Alert:      false,
+			Message:    "Cooldown active",
+			DeviceID:   deviceID,
+			Value:      distance,
+			RecordedAt: now,
+		}, nil
+	}
+
+	variation := math.Abs(distance - last.value)
+
+	if variation >= DistanceVariationThresholdCM {
+		last.lastTriggered = now
+		last.value = distance
+		last.timestamp = now
+
+		return &sensormanager.AlertResponse{
+			Alert:      true,
+			Message:    fmt.Sprintf("Large distance change detected: %.1f cm variation", variation),
+			Value:      distance,
+			Threshold:  last.value,
+			DeviceID:   deviceID,
+			RecordedAt: now,
+		}, nil
+	}
+
+	last.value = distance
+	last.timestamp = now
+
+	return &sensormanager.AlertResponse{
+		Alert:      false,
+		DeviceID:   deviceID,
+		Value:      distance,
+		RecordedAt: now,
+	}, nil
+}
+
+func (ss *sensorsStore) checkMotionAlert(deviceID string, motionDetected bool) (*sensormanager.AlertResponse, error) {
+	now := time.Now()
+
+	if !motionDetected {
+		return &sensormanager.AlertResponse{
+			Alert:      false,
+			DeviceID:   deviceID,
+			Value:      0,
+			RecordedAt: now,
+		}, nil
+	}
+
+	last, exists := lastMotions[deviceID]
+	if exists && now.Sub(last.lastTriggered).Seconds() < AlertCooldownSeconds {
+		return &sensormanager.AlertResponse{
+			Alert:      false,
+			Message:    "Cooldown active",
+			DeviceID:   deviceID,
+			Value:      1,
+			RecordedAt: now,
+		}, nil
+	}
+
+	if !exists {
+		lastMotions[deviceID] = &lastValue{}
+	}
+	lastMotions[deviceID].lastTriggered = now
+
+	return &sensormanager.AlertResponse{
+		Alert:      true,
+		Message:    "Motion detected",
+		Value:      1,
+		DeviceID:   deviceID,
+		RecordedAt: now,
 	}, nil
 }

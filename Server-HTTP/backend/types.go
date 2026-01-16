@@ -1,27 +1,79 @@
 package sensormanager
 
 import (
-	"fmt"
+	"errors"
 	"time"
-
-	"github.com/volatiletech/null/v8"
 )
 
 type SensorType string
 
 const (
-	SensorTypeMicrophone SensorType = "microphone"
 	SensorTypeDistance   SensorType = "distance"
+	SensorTypeMicrophone SensorType = "microphone"
 	SensorTypeMotion     SensorType = "motion"
 )
 
-type ThresholdConfig struct {
-	DeviceID      string
-	SensorType    SensorType
-	MaxValue      *float64
-	MinValue      *float64
-	CooldownSec   int
-	LastTriggered null.Time
+type DistanceData struct {
+	ID         int64
+	DeviceID   string
+	DistanceCm float64
+	RecordedAt time.Time
+}
+
+type DistanceParams struct {
+	DeviceID   string  `json:"deviceId"`
+	DistanceCm float64 `json:"distanceCm"`
+}
+
+func (p *DistanceParams) Sanitize() error {
+	if p.DeviceID == "" {
+		return errors.New("deviceId is required")
+	}
+	if p.DistanceCm < 0 {
+		return errors.New("distanceCm must be positive")
+	}
+	return nil
+}
+
+type MicrophoneData struct {
+	ID         int64
+	DeviceID   string
+	Decibels   float64
+	RecordedAt time.Time
+}
+
+type MicrophoneParams struct {
+	DeviceID string  `json:"deviceId"`
+	Decibels float64 `json:"decibels"`
+}
+
+func (p *MicrophoneParams) Sanitize() error {
+	if p.DeviceID == "" {
+		return errors.New("deviceId is required")
+	}
+	if p.Decibels < 0 {
+		return errors.New("decibels must be positive")
+	}
+	return nil
+}
+
+type MotionData struct {
+	ID             int64
+	DeviceID       string
+	MotionDetected bool
+	RecordedAt     time.Time
+}
+
+type MotionParams struct {
+	DeviceID       string `json:"deviceId"`
+	MotionDetected bool   `json:"motionDetected"`
+}
+
+func (p *MotionParams) Sanitize() error {
+	if p.DeviceID == "" {
+		return errors.New("deviceId is required")
+	}
+	return nil
 }
 
 type AlertResponse struct {
@@ -33,29 +85,13 @@ type AlertResponse struct {
 	RecordedAt time.Time
 }
 
-func (st SensorType) Validate() error {
-	switch st {
-	case SensorTypeMicrophone, SensorTypeDistance, SensorTypeMotion:
-		return nil
-	default:
-		return fmt.Errorf("invalid sensor type: %s", st)
-	}
-}
-
 type SensorManager interface {
-	// Microphone
-	RecordMicrophone(params *MicrophoneParams) (*AlertResponse, error)
-	GetMicrophoneHistory(deviceID string, limit int) ([]*MicrophoneData, error)
-
-	// Distance
 	RecordDistance(params *DistanceParams) (*AlertResponse, error)
 	GetDistanceHistory(deviceID string, limit int) ([]*DistanceData, error)
 
-	// Motion
+	RecordMicrophone(params *MicrophoneParams) (*AlertResponse, error)
+	GetMicrophoneHistory(deviceID string, limit int) ([]*MicrophoneData, error)
+
 	RecordMotion(params *MotionParams) (*AlertResponse, error)
 	GetMotionHistory(deviceID string, limit int) ([]*MotionData, error)
-
-	// Thresholds
-	SetThreshold(config *ThresholdConfig) error
-	GetThreshold(deviceID string, sensorType SensorType) (*ThresholdConfig, error)
 }
