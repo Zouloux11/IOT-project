@@ -29,9 +29,6 @@ func (p *DistanceParams) Sanitize() error {
 	if p.DeviceID == "" {
 		return errors.New("deviceId is required")
 	}
-	if p.DistanceCm < 0 {
-		return errors.New("distanceCm must be positive")
-	}
 	return nil
 }
 
