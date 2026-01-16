@@ -66,7 +66,7 @@ export const DistanceCard: React.FC<DistanceCardProps> = ({
 
         <div>
           <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">
-            Last 10 minutes ({data.length} samples)
+            Last 24 secondes ({data.length} samples)
           </p>
           <SensorChart data={chartData} color="#10b981" unit="cm" />
         </div>

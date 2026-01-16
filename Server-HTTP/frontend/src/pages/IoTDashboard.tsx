@@ -206,7 +206,7 @@ const fetchNewData = async () => {
     // ✅ Chargement initial
     fetchInitialData();
     
-    const interval = setInterval(refreshData, 1000);
+    const interval = setInterval(refreshData, 200);
     
     return () => clearInterval(interval);
   }, []);

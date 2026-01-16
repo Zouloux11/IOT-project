@@ -45,8 +45,10 @@ void sendMotion()
 
 void setup()
 {
+  Serial.println("\SET UP...");
+
   Serial.begin(115200);
-  delay(1000);
+  delay(2000);
   Serial.println("\nStarting...");
 
   WiFi.begin("AndroidAP2288", "evoooooo");
@@ -74,7 +76,7 @@ void setup()
 void loop()
 {
   coap.loop();
-  delay(1000);
+  delay(200);
   int motion = digitalRead(motionPin);
   if (motion == HIGH)
   {
