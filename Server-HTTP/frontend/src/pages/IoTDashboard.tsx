@@ -74,46 +74,32 @@ const IoTDashboard = () => {
     }
   };
 
-  const fetchNewData = async () => {
-    try {
-      // ✅ Récupérer seulement les 5 derniers points (nouveaux)
-      const [micData, distData, motionData] = await Promise.all([
-        sensorApi.getMicrophoneHistory('ESP_001', 5),
-        sensorApi.getDistanceHistory('ESP_002', 5),
-        sensorApi.getMotionHistory('ESP_004', 5)
-      ]);
+const fetchNewData = async () => {
+  try {
+    const [micData, distData, motionData] = await Promise.all([
+      sensorApi.getMicrophoneHistory('ESP_002', MAX_POINTS),
+      sensorApi.getDistanceHistory('ESP_002', MAX_POINTS),
+      sensorApi.getMotionHistory('ESP_004', MAX_POINTS)
+    ]);
 
-      setSensorData(prev => {
-        const newState = { ...prev };
+    console.log('📊 Full refresh:', {
+      mic: micData.length,
+      dist: distData.length,
+      motion: motionData.length
+    });
 
-        // ✅ Ajouter seulement les nouveaux points (ID > dernier ID)
-        const newMic = micData.filter(d => d.id > lastIds.current.microphone);
-        if (newMic.length > 0) {
-          newState.microphone = [...newMic, ...prev.microphone].slice(0, MAX_POINTS);
-          lastIds.current.microphone = newMic[0].id;
-        }
+    // ✅ Remplace tout simplement
+    setSensorData({
+      microphone: micData.slice(0, MAX_POINTS),
+      distance: distData.slice(0, MAX_POINTS),
+      motion: motionData.slice(0, MAX_POINTS)
+    });
 
-        const newDist = distData.filter(d => d.id > lastIds.current.distance);
-        if (newDist.length > 0) {
-          newState.distance = [...newDist, ...prev.distance].slice(0, MAX_POINTS);
-          lastIds.current.distance = newDist[0].id;
-        }
-
-        const newMotion = motionData.filter(d => d.id > lastIds.current.motion);
-        if (newMotion.length > 0) {
-          newState.motion = [...newMotion, ...prev.motion].slice(0, MAX_POINTS);
-          lastIds.current.motion = newMotion[0].id;
-        }
-
-        return newState;
-      });
-
-      setError(null);
-    } catch (error) {
-      console.error('Error fetching new data:', error);
-    }
-  };
-
+    setError(null);
+  } catch (error) {
+    console.error('❌ Error fetching data:', error);
+  }
+};
   const fetchAlerts = async () => {
     try {
       const [micAlerts, distAlerts, motionAlerts] = await Promise.all([
