@@ -16,17 +16,16 @@ export const DistanceCard: React.FC<DistanceCardProps> = React.memo(({
 }) => {
   const latestValue = data[0]?.distanceCm || 0;
 
-  // ✅ Mémoïser les calculs
-  const chartData = useMemo(() => 
-    data.map(d => ({
+  const chartData = useMemo(() => {
+    const reversed = [...data].reverse();
+    return reversed.map(d => ({
       time: new Date(d.recordedAt).toLocaleTimeString('fr-FR', { 
         hour: '2-digit', 
         minute: '2-digit'
       }),
       value: d.distanceCm
-    })).reverse(),
-    [data]
-  );
+    }));
+  }, [data]);
 
   const stats = useMemo(() => {
     if (data.length === 0) return { avg: 0, max: 0, min: 0, variance: 0 };
@@ -71,7 +70,9 @@ export const DistanceCard: React.FC<DistanceCardProps> = React.memo(({
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Last 10 minutes ({data.length} samples)</p>
+          <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">
+            Last 10 minutes ({data.length} samples)
+          </p>
           <SensorChart data={chartData} color="#10b981" unit="cm" />
         </div>
 
