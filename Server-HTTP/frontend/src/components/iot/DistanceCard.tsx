@@ -71,7 +71,7 @@ export const DistanceCard: React.FC<DistanceCardProps> = React.memo(({
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Last hour ({data.length} samples)</p>
+          <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Last 10 minutes ({data.length} samples)</p>
           <SensorChart data={chartData} color="#10b981" unit="cm" />
         </div>
 

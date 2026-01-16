@@ -41,9 +41,9 @@ const IoTDashboard = () => {
   const fetchSensorHistory = async () => {
     try {
       const [micData, distData, motionData] = await Promise.all([
-        sensorApi.getMicrophoneHistory('ESP_001', 720),
-        sensorApi.getDistanceHistory('ESP_002', 720),
-        sensorApi.getMotionHistory('ESP_004', 720)
+        sensorApi.getMicrophoneHistory('ESP_001', 600),
+        sensorApi.getDistanceHistory('ESP_002', 600),
+        sensorApi.getMotionHistory('ESP_004', 600)
       ]);
 
       setSensorData({
