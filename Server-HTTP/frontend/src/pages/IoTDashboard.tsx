@@ -40,10 +40,9 @@ const IoTDashboard = () => {
 
   const fetchSensorHistory = async () => {
     try {
-      // ✅ Augmenté à 720 points (1h à raison de 1 point toutes les 5 secondes)
       const [micData, distData, motionData] = await Promise.all([
         sensorApi.getMicrophoneHistory('ESP_001', 720),
-        sensorApi.getDistanceHistory('ESP_0069', 720),
+        sensorApi.getDistanceHistory('ESP_002', 720),
         sensorApi.getMotionHistory('ESP_004', 720)
       ]);
 
@@ -63,7 +62,7 @@ const IoTDashboard = () => {
     try {
       const [micAlerts, distAlerts, motionAlerts] = await Promise.all([
         sensorApi.getMicrophoneAlerts('ESP_001', '', 50),
-        sensorApi.getDistanceAlerts('ESP_0069', '', 50),
+        sensorApi.getDistanceAlerts('ESP_002', '', 50),
         sensorApi.getMotionAlerts('ESP_004', '', 50)
       ]);
 
@@ -212,7 +211,7 @@ const IoTDashboard = () => {
             />
 
             <DistanceCard
-              deviceId="ESP_0069"
+              deviceId="ESP_002"
               data={sensorData.distance}
             />
 
