@@ -1,107 +1,96 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Activity, AlertTriangle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-interface MotionData {
-  value: boolean;
-  recordedAt: string;
-}
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { MetricCard } from './MetricCard';
+import type { MotionHistory } from '../../lib/sensorAPI';
 
 interface MotionCardProps {
   deviceId: string;
-  data: MotionData[];
-  latestValue: boolean;
-  alert?: boolean;
-  alertMessage?: string;
+  data: MotionHistory[];
 }
 
 export const MotionCard: React.FC<MotionCardProps> = ({ 
   deviceId, 
-  data, 
-  latestValue,
-  alert,
-  alertMessage
+  data
 }) => {
-  const recentDetections = data.filter(d => d.value).slice(0, 5);
+  const latestValue = data[0]?.motionDetected || false;
+  
+  const recentDetections = data.filter(d => d.motionDetected).slice(0, 10);
+  const detectionRate = data.length > 0 
+    ? (data.filter(d => d.motionDetected).length / data.length * 100).toFixed(1)
+    : '0';
+
+  const lastDetection = recentDetections[0]?.recordedAt 
+    ? new Date(recentDetections[0].recordedAt)
+    : null;
+
+  const timeSinceLastDetection = lastDetection
+    ? Math.floor((Date.now() - lastDetection.getTime()) / 1000)
+    : null;
+
+  const formatTimeSince = (seconds: number | null) => {
+    if (seconds === null) return 'Never';
+    if (seconds < 60) return `${seconds}s ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    return `${Math.floor(seconds / 3600)}h ago`;
+  };
 
   return (
-    <Card className={`border-2 transition-colors ${alert ? 'border-red-500 bg-red-500/5' : 'border-primary/20'}`}>
-      <CardHeader>
+    <Card>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
-            Motion Detector
-            <Badge variant="outline">{deviceId}</Badge>
-          </CardTitle>
-          {alert && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="flex items-center gap-2 text-red-500"
-            >
-              <AlertTriangle className="h-5 w-5 animate-pulse" />
-              <span className="text-sm font-semibold">Alert!</span>
-            </motion.div>
-          )}
+          <CardTitle className="text-base font-semibold">Motion Detector</CardTitle>
+          <Badge variant="outline" className="font-mono text-xs">{deviceId}</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-center py-8">
-          <AnimatePresence mode="wait">
-            {latestValue ? (
-              <motion.div
-                key="detected"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0 }}
-                className="text-center"
-              >
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 0.5, repeat: Infinity }}
-                  className="w-24 h-24 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center"
-                >
-                  <Activity className="h-12 w-12 text-white" />
-                </motion.div>
-                <p className="text-2xl font-bold text-red-500">Motion Detected!</p>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="clear"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0 }}
-                className="text-center"
-              >
-                <div className="w-24 h-24 bg-green-500/20 rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-green-500">
-                  <Activity className="h-12 w-12 text-green-500" />
-                </div>
-                <p className="text-2xl font-bold text-green-500">All Clear</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className="grid grid-cols-3 gap-2">
+          <MetricCard 
+            label="Status" 
+            value={latestValue ? 'DETECTED' : 'CLEAR'} 
+            size="md"
+            variant={latestValue ? 'danger' : 'success'}
+          />
+          <MetricCard 
+            label="Detection Rate" 
+            value={detectionRate} 
+            unit="%" 
+          />
+          <MetricCard 
+            label="Last Detection" 
+            value={formatTimeSince(timeSinceLastDetection)}
+          />
         </div>
 
-        {alert && alertMessage && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-            <p className="text-sm text-red-500 font-semibold">{alertMessage}</p>
-          </div>
-        )}
-
         <div>
-          <p className="text-sm text-muted-foreground mb-2">Recent Detections</p>
-          <div className="space-y-2">
+          <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">
+            Recent Detections ({recentDetections.length})
+          </p>
+          <div className="bg-gray-50 border border-gray-200 rounded p-3 max-h-48 overflow-y-auto">
             {recentDetections.length > 0 ? (
-              recentDetections.map((detection, index) => (
-                <div key={index} className="text-sm bg-secondary/50 rounded p-2">
-                  {new Date(detection.recordedAt).toLocaleString('fr-FR')}
-                </div>
-              ))
+              <div className="space-y-1">
+                {recentDetections.map((detection, index) => (
+                  <div key={detection.id || index} className="text-xs text-gray-700 font-mono border-b border-gray-200 pb-1 last:border-0">
+                    {new Date(detection.recordedAt).toLocaleString('fr-FR')}
+                  </div>
+                ))}
+              </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No recent motion detected</p>
+              <p className="text-xs text-gray-500">No detections recorded</p>
             )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="bg-gray-50 border border-gray-200 rounded p-2">
+            <span className="text-gray-500">Total Samples:</span>
+            <span className="ml-2 font-semibold">{data.length}</span>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded p-2">
+            <span className="text-gray-500">Last Update:</span>
+            <span className="ml-2 font-semibold">
+              {data[0]?.recordedAt ? new Date(data[0].recordedAt).toLocaleTimeString('fr-FR') : 'N/A'}
+            </span>
           </div>
         </div>
       </CardContent>
