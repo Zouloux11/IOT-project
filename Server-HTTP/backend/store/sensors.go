@@ -140,10 +140,6 @@ func (ss *sensorsStore) RecordDistance(params *sensormanager.DistanceParams) (*s
 		return nil, err
 	}
 
-	if params.DistanceCm < 0 {
-		params.DistanceCm = 0
-	}
-
 	model := &models.DistanceDatum{
 		DeviceID:   params.DeviceID,
 		DistanceCM: types.NewDecimal(new(decimal.Big).SetFloat64(params.DistanceCm)),
