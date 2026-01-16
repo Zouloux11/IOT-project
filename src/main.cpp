@@ -6,6 +6,8 @@
 
 const byte triggerPin = 5;
 const byte echoPin = 4;
+const byte motionPin = 0;
+
 UltraSonicDistanceSensor distanceSensor(triggerPin, echoPin);
 
 WiFiUDP Udp;
@@ -26,6 +28,19 @@ void sendDistance()
   Serial.println(payload);
 
   int id = coap.put(IPAddress(192, 168, 52, 241), 4832, "distance", payload.c_str());
+}
+
+void sendMotion()
+{
+  int motion = digitalRead(motionPin);
+  String motionStr = (motion == HIGH) ? "true" : "false";
+
+  String payload = "{\"deviceId\":\"ESP_004\",\"value\":" + motionStr + "}";
+
+  Serial.print("Sending: ");
+  Serial.println(payload);
+
+  int id = coap.put(IPAddress(192, 168, 52, 241), 4832, "motion", payload.c_str());
 }
 
 void setup()
@@ -60,7 +75,10 @@ void loop()
 {
   coap.loop();
   delay(100);
+  int motion = digitalRead(motionPin);
+  Serial.println(motion);
   sendDistance();
+  sendMotion();
 }
 
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port)

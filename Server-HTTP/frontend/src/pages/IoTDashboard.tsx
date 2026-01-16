@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Activity } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { MicrophoneCard } from '../components/iot/MicrophoneCard';
@@ -26,6 +26,8 @@ interface Alert {
   resolvedAt?: string;
 }
 
+const MAX_POINTS = 120; // Nombre fixe de points (10 min à 1 point/5s)
+
 const IoTDashboard = () => {
   const [sensorData, setSensorData] = useState<SensorData>({
     microphone: [],
@@ -38,23 +40,77 @@ const IoTDashboard = () => {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSensorHistory = async () => {
+  // ✅ Stocker le dernier ID récupéré pour chaque capteur
+  const lastIds = useRef({
+    microphone: 0,
+    distance: 0,
+    motion: 0
+  });
+
+  const fetchInitialData = async () => {
     try {
       const [micData, distData, motionData] = await Promise.all([
-        sensorApi.getMicrophoneHistory('ESP_001', 600),
-        sensorApi.getDistanceHistory('ESP_002', 600),
-        sensorApi.getMotionHistory('ESP_004', 600)
+        sensorApi.getMicrophoneHistory('ESP_001', MAX_POINTS),
+        sensorApi.getDistanceHistory('ESP_002', MAX_POINTS),
+        sensorApi.getMotionHistory('ESP_004', MAX_POINTS)
       ]);
 
+      // Garder seulement MAX_POINTS les plus récents
       setSensorData({
-        microphone: micData,
-        distance: distData,
-        motion: motionData
+        microphone: micData.slice(0, MAX_POINTS),
+        distance: distData.slice(0, MAX_POINTS),
+        motion: motionData.slice(0, MAX_POINTS)
       });
+
+      // Sauvegarder les derniers IDs
+      if (micData.length > 0) lastIds.current.microphone = micData[0].id;
+      if (distData.length > 0) lastIds.current.distance = distData[0].id;
+      if (motionData.length > 0) lastIds.current.motion = motionData[0].id;
+
       setError(null);
     } catch (error) {
       console.error('Error fetching sensor history:', error);
       setError('Failed to fetch sensor data');
+    }
+  };
+
+  const fetchNewData = async () => {
+    try {
+      // ✅ Récupérer seulement les 5 derniers points (nouveaux)
+      const [micData, distData, motionData] = await Promise.all([
+        sensorApi.getMicrophoneHistory('ESP_001', 5),
+        sensorApi.getDistanceHistory('ESP_002', 5),
+        sensorApi.getMotionHistory('ESP_004', 5)
+      ]);
+
+      setSensorData(prev => {
+        const newState = { ...prev };
+
+        // ✅ Ajouter seulement les nouveaux points (ID > dernier ID)
+        const newMic = micData.filter(d => d.id > lastIds.current.microphone);
+        if (newMic.length > 0) {
+          newState.microphone = [...newMic, ...prev.microphone].slice(0, MAX_POINTS);
+          lastIds.current.microphone = newMic[0].id;
+        }
+
+        const newDist = distData.filter(d => d.id > lastIds.current.distance);
+        if (newDist.length > 0) {
+          newState.distance = [...newDist, ...prev.distance].slice(0, MAX_POINTS);
+          lastIds.current.distance = newDist[0].id;
+        }
+
+        const newMotion = motionData.filter(d => d.id > lastIds.current.motion);
+        if (newMotion.length > 0) {
+          newState.motion = [...newMotion, ...prev.motion].slice(0, MAX_POINTS);
+          lastIds.current.motion = newMotion[0].id;
+        }
+
+        return newState;
+      });
+
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching new data:', error);
     }
   };
 
@@ -113,7 +169,7 @@ const IoTDashboard = () => {
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([fetchSensorHistory(), fetchAlerts()]);
+      await Promise.all([fetchNewData(), fetchAlerts()]);
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Error refreshing data:', error);
@@ -161,10 +217,11 @@ const IoTDashboard = () => {
   };
 
   useEffect(() => {
-    refreshData();
+    // ✅ Chargement initial
+    fetchInitialData();
     
-
-    const interval = setInterval(refreshData, 100);
+    // ✅ Puis refresh incrémental toutes les 5 secondes
+    const interval = setInterval(refreshData, 5000);
     
     return () => clearInterval(interval);
   }, []);
@@ -189,7 +246,7 @@ const IoTDashboard = () => {
             </div>
             
             <Button
-              onClick={refreshData}
+              onClick={() => fetchInitialData().then(() => setLastUpdate(new Date()))}
               disabled={isRefreshing}
               variant="outline"
               size="sm"
