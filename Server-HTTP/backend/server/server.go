@@ -41,4 +41,5 @@ func (s *Server) addRESHandlers() {
 	s.addMicrophoneHandler()
 	s.addDistanceHandler()
 	s.addMotionHandler()
+	s.addAlertsHandlers()
 }
