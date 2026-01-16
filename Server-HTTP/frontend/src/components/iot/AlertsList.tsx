@@ -65,7 +65,7 @@ export const AlertsList: React.FC<AlertsListProps> = ({ alerts, onAcknowledge, o
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {alerts.map((alert) => (
             <div 
-              key={alert.id} 
+              key={`${alert.type}-${alert.id}`}
               className="border rounded-lg p-3 bg-white hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-start justify-between mb-2">

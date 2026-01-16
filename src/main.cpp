@@ -76,6 +76,18 @@ void loop()
   coap.loop();
   delay(1000);
   int motion = digitalRead(motionPin);
+  if (motion == HIGH)
+  {
+    Serial.println("HIGH");
+
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+  else
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+
+    Serial.println("LOW");
+  }
   Serial.println(motion);
   sendDistance();
   // sendMotion();
