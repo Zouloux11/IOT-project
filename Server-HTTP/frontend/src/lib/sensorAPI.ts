@@ -132,8 +132,8 @@ export const sensorApi = {
   // ============= ALERTS =============
 
   getMicrophoneAlerts: async (deviceId: string, status?: string, limit: number = 50): Promise<MicrophoneAlert[]> => {
-    const response = await fetch(`${API_BASE_URL}/alerts/microphone`, {
-      method: 'GET',
+    const response = await fetch(`${API_BASE_URL}/alerts/microphone/get`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ deviceId, status, limit }),
     });
@@ -142,8 +142,8 @@ export const sensorApi = {
   },
 
   getDistanceAlerts: async (deviceId: string, status?: string, limit: number = 50): Promise<DistanceAlert[]> => {
-    const response = await fetch(`${API_BASE_URL}/alerts/distance`, {
-      method: 'GET',
+    const response = await fetch(`${API_BASE_URL}/alerts/distance/get`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ deviceId, status, limit }),
     });
@@ -152,8 +152,8 @@ export const sensorApi = {
   },
 
   getMotionAlerts: async (deviceId: string, status?: string, limit: number = 50): Promise<MotionAlert[]> => {
-    const response = await fetch(`${API_BASE_URL}/alerts/motion`, {
-      method: 'GET',
+    const response = await fetch(`${API_BASE_URL}/alerts/motion/get`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ deviceId, status, limit }),
     });
