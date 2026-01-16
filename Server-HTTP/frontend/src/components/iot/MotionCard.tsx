@@ -52,11 +52,6 @@ export const MotionCard: React.FC<MotionCardProps> = ({
             variant={latestValue ? 'danger' : 'success'}
           />
           <MetricCard 
-            label="Detection Rate" 
-            value={detectionRate} 
-            unit="%" 
-          />
-          <MetricCard 
             label="Last Detection" 
             value={formatTimeSince(timeSinceLastDetection)}
           />
@@ -82,10 +77,6 @@ export const MotionCard: React.FC<MotionCardProps> = ({
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="bg-gray-50 border border-gray-200 rounded p-2">
-            <span className="text-gray-500">Total Samples:</span>
-            <span className="ml-2 font-semibold">{data.length}</span>
-          </div>
           <div className="bg-gray-50 border border-gray-200 rounded p-2">
             <span className="text-gray-500">Last Update:</span>
             <span className="ml-2 font-semibold">

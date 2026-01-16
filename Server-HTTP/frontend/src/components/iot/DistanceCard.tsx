@@ -51,18 +51,7 @@ export const DistanceCard: React.FC<DistanceCardProps> = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-4 gap-2">
-          <MetricCard 
-            label="Current" 
-            value={latestValue.toFixed(1)} 
-            unit="cm" 
-            size="lg"
-            variant={getVariant(latestValue)}
-          />
-          <MetricCard label="Average" value={avg.toFixed(1)} unit="cm" />
-          <MetricCard label="Max" value={max.toFixed(1)} unit="cm" />
-          <MetricCard label="Min" value={min.toFixed(1)} unit="cm" />
-        </div>
+
 
         <div>
           <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">
@@ -72,14 +61,6 @@ export const DistanceCard: React.FC<DistanceCardProps> = ({
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-xs">
-          <div className="bg-gray-50 border border-gray-200 rounded p-2">
-            <span className="text-gray-500">Samples:</span>
-            <span className="ml-2 font-semibold">{data.length}</span>
-          </div>
-          <div className="bg-gray-50 border border-gray-200 rounded p-2">
-            <span className="text-gray-500">Variance:</span>
-            <span className="ml-2 font-semibold">{variance.toFixed(1)} cm</span>
-          </div>
           <div className="bg-gray-50 border border-gray-200 rounded p-2">
             <span className="text-gray-500">Last Update:</span>
             <span className="ml-2 font-semibold">

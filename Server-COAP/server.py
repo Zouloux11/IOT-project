@@ -28,12 +28,12 @@ class SensorResource(resource.Resource):
             return aiocoap.Message(code=aiocoap.BAD_REQUEST, payload=b"Invalid JSON")
         
         api_data = self._prepare_data(device_id, value)
-        success = await self._send_to_api(api_data)
         
-        if success:
-            return aiocoap.Message(code=aiocoap.CHANGED, payload=b"OK")
-        else:
-            return aiocoap.Message(code=aiocoap.INTERNAL_SERVER_ERROR, payload=b"Error")
+        # ✅ Lancer l'envoi API en arrière-plan sans attendre
+        asyncio.create_task(self._send_to_api(api_data))
+        
+        # ✅ Répondre IMMÉDIATEMENT à l'ESP
+        return aiocoap.Message(code=aiocoap.CHANGED, payload=b"OK")
     
     def _prepare_data(self, device_id, value):
         try:

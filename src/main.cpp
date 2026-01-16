@@ -45,7 +45,6 @@ void sendMotion()
 
 void setup()
 {
-  Serial.println("\SET UP...");
 
   Serial.begin(115200);
   delay(2000);
@@ -92,7 +91,7 @@ void loop()
   }
   Serial.println(motion);
   sendDistance();
-  // sendMotion();
+  sendMotion();
 }
 
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port)
