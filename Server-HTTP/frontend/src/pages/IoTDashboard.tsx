@@ -40,10 +40,11 @@ const IoTDashboard = () => {
 
   const fetchSensorHistory = async () => {
     try {
+      // ✅ Augmenté à 720 points (1h à raison de 1 point toutes les 5 secondes)
       const [micData, distData, motionData] = await Promise.all([
-        sensorApi.getMicrophoneHistory('ESP_001', 20),
-        sensorApi.getDistanceHistory('ESP_002', 20),
-        sensorApi.getMotionHistory('ESP_004', 20)
+        sensorApi.getMicrophoneHistory('ESP_001', 720),
+        sensorApi.getDistanceHistory('ESP_0069', 720),
+        sensorApi.getMotionHistory('ESP_004', 720)
       ]);
 
       setSensorData({
@@ -61,9 +62,9 @@ const IoTDashboard = () => {
   const fetchAlerts = async () => {
     try {
       const [micAlerts, distAlerts, motionAlerts] = await Promise.all([
-        sensorApi.getMicrophoneAlerts('ESP_001', '', 20),
-        sensorApi.getDistanceAlerts('ESP_002', '', 20),
-        sensorApi.getMotionAlerts('ESP_004', '', 20)
+        sensorApi.getMicrophoneAlerts('ESP_001', '', 50),
+        sensorApi.getDistanceAlerts('ESP_0069', '', 50),
+        sensorApi.getMotionAlerts('ESP_004', '', 50)
       ]);
 
       const allAlerts: Alert[] = [
@@ -163,7 +164,8 @@ const IoTDashboard = () => {
   useEffect(() => {
     refreshData();
     
-    const interval = setInterval(refreshData, 100);
+    // ✅ CORRIGÉ: 5000ms au lieu de 100ms !
+    const interval = setInterval(refreshData, 5000);
     
     return () => clearInterval(interval);
   }, []);
@@ -210,7 +212,7 @@ const IoTDashboard = () => {
             />
 
             <DistanceCard
-              deviceId="ESP_002"
+              deviceId="ESP_0069"
               data={sensorData.distance}
             />
 

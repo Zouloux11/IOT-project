@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { SensorChart } from './SensorChart';
@@ -10,32 +10,37 @@ interface DistanceCardProps {
   data: DistanceHistory[];
 }
 
-export const DistanceCard: React.FC<DistanceCardProps> = ({ 
+export const DistanceCard: React.FC<DistanceCardProps> = React.memo(({ 
   deviceId, 
   data
 }) => {
   const latestValue = data[0]?.distanceCm || 0;
 
-  const chartData = data.map(d => ({
-    time: new Date(d.recordedAt).toLocaleTimeString('fr-FR', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      second: '2-digit'
-    }),
-    value: d.distanceCm
-  })).reverse();
+  // ✅ Mémoïser les calculs
+  const chartData = useMemo(() => 
+    data.map(d => ({
+      time: new Date(d.recordedAt).toLocaleTimeString('fr-FR', { 
+        hour: '2-digit', 
+        minute: '2-digit'
+      }),
+      value: d.distanceCm
+    })).reverse(),
+    [data]
+  );
 
-  const avg = data.length > 0 
-    ? data.reduce((sum, d) => sum + d.distanceCm, 0) / data.length 
-    : 0;
-  
-  const max = data.length > 0 ? Math.max(...data.map(d => d.distanceCm)) : 0;
-  const min = data.length > 0 ? Math.min(...data.map(d => d.distanceCm)) : 0;
-
-  // Calculate variance (variation) over last readings
-  const variance = data.length > 1
-    ? Math.abs(data[0].distanceCm - data[data.length - 1].distanceCm)
-    : 0;
+  const stats = useMemo(() => {
+    if (data.length === 0) return { avg: 0, max: 0, min: 0, variance: 0 };
+    
+    const values = data.map(d => d.distanceCm);
+    const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    const variance = data.length > 1 
+      ? Math.abs(data[0].distanceCm - data[data.length - 1].distanceCm)
+      : 0;
+    
+    return { avg, max, min, variance };
+  }, [data]);
 
   const getVariant = (cm: number) => {
     if (cm < 20) return 'danger';
@@ -60,13 +65,13 @@ export const DistanceCard: React.FC<DistanceCardProps> = ({
             size="lg"
             variant={getVariant(latestValue)}
           />
-          <MetricCard label="Average" value={avg.toFixed(1)} unit="cm" />
-          <MetricCard label="Max" value={max.toFixed(1)} unit="cm" />
-          <MetricCard label="Min" value={min.toFixed(1)} unit="cm" />
+          <MetricCard label="Average" value={stats.avg.toFixed(1)} unit="cm" />
+          <MetricCard label="Max" value={stats.max.toFixed(1)} unit="cm" />
+          <MetricCard label="Min" value={stats.min.toFixed(1)} unit="cm" />
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Last {data.length} readings</p>
+          <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Last hour ({data.length} samples)</p>
           <SensorChart data={chartData} color="#10b981" unit="cm" />
         </div>
 
@@ -77,7 +82,7 @@ export const DistanceCard: React.FC<DistanceCardProps> = ({
           </div>
           <div className="bg-gray-50 border border-gray-200 rounded p-2">
             <span className="text-gray-500">Variance:</span>
-            <span className="ml-2 font-semibold">{variance.toFixed(1)} cm</span>
+            <span className="ml-2 font-semibold">{stats.variance.toFixed(1)} cm</span>
           </div>
           <div className="bg-gray-50 border border-gray-200 rounded p-2">
             <span className="text-gray-500">Last Update:</span>
@@ -89,4 +94,6 @@ export const DistanceCard: React.FC<DistanceCardProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+DistanceCard.displayName = 'DistanceCard';
