@@ -220,8 +220,8 @@ const IoTDashboard = () => {
     // ✅ Chargement initial
     fetchInitialData();
     
-    // ✅ Puis refresh incrémental toutes les 5 secondes
-    const interval = setInterval(refreshData, 5000);
+    // ✅ Refresh toutes les 100ms
+    const interval = setInterval(refreshData, 100);
     
     return () => clearInterval(interval);
   }, []);
