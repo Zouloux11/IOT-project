@@ -74,11 +74,11 @@ void setup()
 void loop()
 {
   coap.loop();
-  delay(100);
+  delay(1000);
   int motion = digitalRead(motionPin);
   Serial.println(motion);
   sendDistance();
-  sendMotion();
+  // sendMotion();
 }
 
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port)

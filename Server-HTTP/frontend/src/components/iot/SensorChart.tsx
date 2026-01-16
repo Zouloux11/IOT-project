@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface SensorChartProps {
@@ -6,35 +6,23 @@ interface SensorChartProps {
   color: string;
   unit: string;
   height?: number;
-  showLegend?: boolean;
 }
-
-const downsampleData = (data: Array<{ time: string; value: number }>, maxPoints: number = 100) => {
-  if (data.length <= maxPoints) return data;
-  
-  const step = Math.ceil(data.length / maxPoints);
-  return data.filter((_, index) => index % step === 0);
-};
 
 export const SensorChart: React.FC<SensorChartProps> = React.memo(({ 
   data, 
   color, 
   unit, 
-  height = 180,
-  showLegend = false 
+  height = 180
 }) => {
-  // ✅ Mémoïser les données échantillonnées
-  const sampledData = useMemo(() => downsampleData(data, 100), [data]);
-
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={sampledData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+      <LineChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis 
           dataKey="time" 
           tick={{ fill: '#6b7280', fontSize: 11 }}
           stroke="#9ca3af"
-          interval="preserveStartEnd"
+          interval={Math.floor(data.length / 10)}
         />
         <YAxis 
           tick={{ fill: '#6b7280', fontSize: 11 }}
@@ -54,17 +42,20 @@ export const SensorChart: React.FC<SensorChartProps> = React.memo(({
           }}
         />
         <Line 
-          type="monotone" 
+          type="linear"
           dataKey="value" 
           stroke={color} 
-          strokeWidth={1.5}
+          strokeWidth={2}
           dot={false}
-          activeDot={{ r: 4 }}
           isAnimationActive={false}
         />
       </LineChart>
     </ResponsiveContainer>
   );
+}, (prev, next) => {
+  // ✅ Ne re-render que si la longueur ou la dernière valeur change
+  return prev.data.length === next.data.length && 
+         prev.data[prev.data.length - 1]?.value === next.data[next.data.length - 1]?.value;
 });
 
 SensorChart.displayName = 'SensorChart';

@@ -16,16 +16,14 @@ export const DistanceCard: React.FC<DistanceCardProps> = React.memo(({
 }) => {
   const latestValue = data[0]?.distanceCm || 0;
 
+  // ✅ Utiliser l'index au lieu du timestamp pour éviter le recalcul
   const chartData = useMemo(() => {
     const reversed = [...data].reverse();
-    return reversed.map(d => ({
-      time: new Date(d.recordedAt).toLocaleTimeString('fr-FR', { 
-        hour: '2-digit', 
-        minute: '2-digit'
-      }),
+    return reversed.map((d, index) => ({
+      time: `${index}`, // Juste l'index
       value: d.distanceCm
     }));
-  }, [data]);
+  }, [data.length, data[0]?.id]); // Ne recalcule que si la longueur ou le premier ID change
 
   const stats = useMemo(() => {
     if (data.length === 0) return { avg: 0, max: 0, min: 0, variance: 0 };
@@ -95,6 +93,10 @@ export const DistanceCard: React.FC<DistanceCardProps> = React.memo(({
       </CardContent>
     </Card>
   );
+}, (prev, next) => {
+  // ✅ Ne re-render que si les données changent vraiment
+  return prev.data.length === next.data.length && 
+         prev.data[0]?.id === next.data[0]?.id;
 });
 
 DistanceCard.displayName = 'DistanceCard';
