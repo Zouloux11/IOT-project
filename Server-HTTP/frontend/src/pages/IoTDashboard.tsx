@@ -163,7 +163,7 @@ const IoTDashboard = () => {
   useEffect(() => {
     refreshData();
     
-    const interval = setInterval(refreshData, 5000);
+    const interval = setInterval(refreshData, 100);
     
     return () => clearInterval(interval);
   }, []);

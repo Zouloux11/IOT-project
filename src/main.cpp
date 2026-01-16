@@ -20,7 +20,7 @@ void sendDistance()
 {
   float distance = distanceSensor.measureDistanceCm();
 
-  String payload = "{\"deviceId\":\"ESP_0069\",\"value\":" + String(distance, 2) + "}";
+  String payload = "{\"deviceId\":\"ESP_002\",\"value\":" + String(distance, 2) + "}";
 
   Serial.print("Sending: ");
   Serial.println(payload);
@@ -59,7 +59,7 @@ void setup()
 void loop()
 {
   coap.loop();
-  delay(5000);
+  delay(100);
   sendDistance();
 }
 
