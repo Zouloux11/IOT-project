@@ -34,7 +34,6 @@ func (p *motionProvider) RecordData(request res.CallRequest) {
 		return
 	}
 
-	// 🔔 Envoyer une notification si alerte déclenchée
 	if alertResponse.Alert {
 		notifParams := &sensormanager.NotificationParams{
 			Title: "⚠️ Alerte Mouvement",
