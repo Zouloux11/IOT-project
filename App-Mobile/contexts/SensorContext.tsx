@@ -1,18 +1,39 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { sensorApi, AlertResponse } from '../services/sensorApi';
-import { schedulePushNotification } from '../services/notifications';
+import { 
+  sensorApi, 
+  MicrophoneHistory, 
+  DistanceHistory, 
+  MotionHistory,
+  MicrophoneAlert,
+  DistanceAlert,
+  MotionAlert
+} from '../services/sensorApi';
 
 interface SensorData {
-  microphone: { value: number; recordedAt: string }[];
-  distance: { value: number; recordedAt: string }[];
-  motion: { value: boolean; recordedAt: string }[];
+  microphone: MicrophoneHistory[];
+  distance: DistanceHistory[];
+  motion: MotionHistory[];
+}
+
+interface Alert {
+  id: number;
+  type: 'microphone' | 'distance' | 'motion';
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+  value: number | boolean;
+  timestamp: string;
+  deviceId: string;
+  acknowledged: boolean;
+  status: string;
 }
 
 interface SensorContextType {
   sensorData: SensorData;
-  alerts: AlertResponse[];
+  alerts: Alert[];
   loading: boolean;
   refreshData: () => Promise<void>;
+  acknowledgeAlert: (id: number, type: 'microphone' | 'distance' | 'motion') => Promise<void>;
+  resolveAlert: (id: number, type: 'microphone' | 'distance' | 'motion') => Promise<void>;
 }
 
 const SensorContext = createContext<SensorContextType | undefined>(undefined);
@@ -23,39 +44,27 @@ export const SensorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     distance: [],
     motion: [],
   });
-  const [alerts, setAlerts] = useState<AlertResponse[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refreshData = async () => {
     setLoading(true);
     try {
+      // Récupérer l'historique des capteurs
       const [micData, distData, motionData] = await Promise.all([
-        sensorApi.getMicrophoneHistory('ESP_001', 20),
-        sensorApi.getDistanceHistory('ESP_002', 20),
-        sensorApi.getMotionHistory('ESP_004', 20),
+        sensorApi.getMicrophoneHistory('ESP_001', 120),
+        sensorApi.getDistanceHistory('ESP_002', 120),
+        sensorApi.getMotionHistory('ESP_004', 120),
       ]);
 
-      // 🔥 CORRECTION : Mapper les données de l'API vers le format attendu
-setSensorData({
-  microphone: (Array.isArray(micData) ? micData : micData.data || []).map((d: any) => ({
-    value: d.decibelDb,
-    recordedAt: d.recordedAt,
-  })),
-  distance: (Array.isArray(distData) ? distData : distData.data || []).map((d: any) => ({
-    value: d.distanceCm,
-    recordedAt: d.recordedAt,
-  })),
-  motion: (Array.isArray(motionData) ? motionData : motionData.data || []).map((d: any) => ({
-    value: d.motionDetected,
-    recordedAt: d.recordedAt,
-  })),
-});
-      // Générer des alertes locales si nécessaire
-      checkForAlerts(
-        (micData.data || []).map((d: any) => ({ value: d.decibelDb, recordedAt: d.recordedAt })),
-        (distData.data || []).map((d: any) => ({ value: d.distanceCm, recordedAt: d.recordedAt })),
-        (motionData.data || []).map((d: any) => ({ value: d.motionDetected, recordedAt: d.recordedAt }))
-      );
+      setSensorData({
+        microphone: micData,
+        distance: distData,
+        motion: motionData,
+      });
+
+      // Récupérer les alertes de l'API
+      await refreshAlerts();
     } catch (error) {
       console.error('Error fetching sensor data:', error);
     } finally {
@@ -63,40 +72,87 @@ setSensorData({
     }
   };
 
-  const checkForAlerts = (
-    mic: { value: number; recordedAt: string }[],
-    dist: { value: number; recordedAt: string }[],
-    motion: { value: boolean; recordedAt: string }[]
-  ) => {
-    const latestMic = mic[0];
-    const latestDist = dist[0];
-    const latestMotion = motion[0];
+  const refreshAlerts = async () => {
+    try {
+      const [micAlerts, distAlerts, motionAlerts] = await Promise.all([
+        sensorApi.getMicrophoneAlerts('ESP_001', '', 50),
+        sensorApi.getDistanceAlerts('ESP_002', '', 50),
+        sensorApi.getMotionAlerts('ESP_004', '', 50),
+      ]);
 
-    // Alerte microphone
-    if (latestMic && latestMic.value > 80) {
-      schedulePushNotification(
-        '🔊 Alerte Sonore',
-        `Niveau sonore élevé: ${latestMic.value.toFixed(1)} dB`,
-        { type: 'microphone', deviceId: 'ESP_001' }
+      const allAlerts: Alert[] = [
+        ...micAlerts.map(a => ({
+          id: a.id,
+          type: 'microphone' as const,
+          severity: a.decibels >= 100 ? 'high' : 'medium' as const,
+          message: `Niveau sonore élevé: ${a.decibels.toFixed(1)} dB (seuil: ${a.thresholdExceeded} dB)`,
+          value: a.decibels,
+          timestamp: a.createdAt,
+          deviceId: a.deviceId,
+          acknowledged: a.alertStatus !== 'active',
+          status: a.alertStatus,
+        })),
+        ...distAlerts.map(a => ({
+          id: a.id,
+          type: 'distance' as const,
+          severity: a.distanceCm < 10 ? 'high' : 'medium' as const,
+          message: `Distance ${a.thresholdType}: ${a.distanceCm.toFixed(1)} cm (depuis ${a.thresholdValue.toFixed(1)} cm)`,
+          value: a.distanceCm,
+          timestamp: a.createdAt,
+          deviceId: a.deviceId,
+          acknowledged: a.alertStatus !== 'active',
+          status: a.alertStatus,
+        })),
+        ...motionAlerts.map(a => ({
+          id: a.id,
+          type: 'motion' as const,
+          severity: 'high' as const,
+          message: a.alertReason || 'Mouvement détecté',
+          value: a.motionDetected,
+          timestamp: a.createdAt,
+          deviceId: a.deviceId,
+          acknowledged: a.alertStatus !== 'active',
+          status: a.alertStatus,
+        })),
+      ];
+
+      allAlerts.sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
+
+      setAlerts(allAlerts);
+    } catch (error) {
+      console.error('Error fetching alerts:', error);
     }
+  };
 
-    // Alerte distance
-    if (latestDist && latestDist.value < 30) {
-      schedulePushNotification(
-        '⚠️ Obstacle Proche',
-        `Distance: ${latestDist.value.toFixed(1)} cm`,
-        { type: 'distance', deviceId: 'ESP_002' }
-      );
+  const acknowledgeAlert = async (id: number, type: 'microphone' | 'distance' | 'motion') => {
+    try {
+      if (type === 'microphone') {
+        await sensorApi.updateMicrophoneAlertStatus(id, 'acknowledged');
+      } else if (type === 'distance') {
+        await sensorApi.updateDistanceAlertStatus(id, 'acknowledged');
+      } else if (type === 'motion') {
+        await sensorApi.updateMotionAlertStatus(id, 'acknowledged');
+      }
+      await refreshAlerts();
+    } catch (error) {
+      console.error('Error acknowledging alert:', error);
     }
+  };
 
-    // Alerte mouvement
-    if (latestMotion && latestMotion.value) {
-      schedulePushNotification(
-        '🚶 Mouvement Détecté',
-        'Activité détectée par le capteur',
-        { type: 'motion', deviceId: 'ESP_004' }
-      );
+  const resolveAlert = async (id: number, type: 'microphone' | 'distance' | 'motion') => {
+    try {
+      if (type === 'microphone') {
+        await sensorApi.updateMicrophoneAlertStatus(id, 'resolved');
+      } else if (type === 'distance') {
+        await sensorApi.updateDistanceAlertStatus(id, 'resolved');
+      } else if (type === 'motion') {
+        await sensorApi.updateMotionAlertStatus(id, 'resolved');
+      }
+      await refreshAlerts();
+    } catch (error) {
+      console.error('Error resolving alert:', error);
     }
   };
 
@@ -107,7 +163,14 @@ setSensorData({
   }, []);
 
   return (
-    <SensorContext.Provider value={{ sensorData, alerts, loading, refreshData }}>
+    <SensorContext.Provider value={{ 
+      sensorData, 
+      alerts, 
+      loading, 
+      refreshData,
+      acknowledgeAlert,
+      resolveAlert
+    }}>
       {children}
     </SensorContext.Provider>
   );

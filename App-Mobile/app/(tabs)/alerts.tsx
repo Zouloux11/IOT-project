@@ -13,94 +13,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { borderRadius, colors, shadows, spacing } from '../../constants/theme';
 import { useSensors } from '../../contexts/SensorContext';
 
-interface Alert {
-  id: string;
-  type: 'microphone' | 'distance' | 'motion';
-  severity: 'low' | 'medium' | 'high';
-  message: string;
-  value: number | boolean;
-  timestamp: string;
-  deviceId: string;
-  acknowledged: boolean;
-}
-
 export default function AlertsScreen() {
   const insets = useSafeAreaInsets();
-  const { sensorData, loading, refreshData } = useSensors();
+  const { alerts, loading, refreshData, acknowledgeAlert, resolveAlert } = useSensors();
   const [refreshing, setRefreshing] = useState(false);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await refreshData();
-    generateAlerts();
     setRefreshing(false);
   };
 
-  const generateAlerts = () => {
-    const newAlerts: Alert[] = [];
-
-    // Microphone alerts
-    sensorData.microphone.forEach((mic, index) => {
-      if (mic.value > 80) {
-        newAlerts.push({
-          id: `mic-${index}`,
-          type: 'microphone',
-          severity: mic.value > 100 ? 'high' : 'medium',
-          message: `Niveau sonore élevé détecté: ${mic.value.toFixed(1)} dB`,
-          value: mic.value,
-          timestamp: mic.recordedAt,
-          deviceId: 'ESP_001',
-          acknowledged: false,
-        });
-      }
-    });
-
-    // Distance alerts
-    sensorData.distance.forEach((dist, index) => {
-      if (dist.value < 30) {
-        newAlerts.push({
-          id: `dist-${index}`,
-          type: 'distance',
-          severity: dist.value < 10 ? 'high' : 'medium',
-          message: `Obstacle très proche: ${dist.value.toFixed(1)} cm`,
-          value: dist.value,
-          timestamp: dist.recordedAt,
-          deviceId: 'ESP_002',
-          acknowledged: false,
-        });
-      }
-    });
-
-    // Motion alerts
-    sensorData.motion.forEach((motion, index) => {
-      if (motion.value) {
-        newAlerts.push({
-          id: `motion-${index}`,
-          type: 'motion',
-          severity: 'high',
-          message: 'Mouvement détecté',
-          value: motion.value,
-          timestamp: motion.recordedAt,
-          deviceId: 'ESP_004',
-          acknowledged: false,
-        });
-      }
-    });
-
-    setAlerts(newAlerts.sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    ));
+  const handleAcknowledge = async (id: number, type: 'microphone' | 'distance' | 'motion') => {
+    await acknowledgeAlert(id, type);
   };
 
-  React.useEffect(() => {
-    generateAlerts();
-  }, [sensorData]);
-
-  const acknowledgeAlert = (id: string) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === id ? { ...alert, acknowledged: true } : alert
-    ));
+  const handleResolve = async (id: number, type: 'microphone' | 'distance' | 'motion') => {
+    await resolveAlert(id, type);
   };
 
   const getSeverityColor = (severity: string) => {
@@ -120,6 +49,9 @@ export default function AlertsScreen() {
       default: return 'alert-circle';
     }
   };
+
+  // Filtrer pour n'afficher que les alertes non résolues
+  const activeAlerts = alerts.filter(a => a.status !== 'resolved');
 
   if (loading && !refreshing) {
     return (
@@ -144,46 +76,44 @@ export default function AlertsScreen() {
         <View style={styles.summaryStats}>
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryNumber, { color: colors.error }]}>
-              {alerts.filter(a => a.severity === 'high').length}
+              {activeAlerts.filter(a => a.severity === 'high').length}
             </Text>
             <Text style={styles.summaryLabel}>Critiques</Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryNumber, { color: colors.warning }]}>
-              {alerts.filter(a => a.severity === 'medium').length}
+              {activeAlerts.filter(a => a.severity === 'medium').length}
             </Text>
             <Text style={styles.summaryLabel}>Moyennes</Text>
           </View>
           <View style={styles.summaryItem}>
-            <Text style={[styles.summaryNumber, { color: colors.info }]}>
-              {alerts.filter(a => a.severity === 'low').length}
+            <Text style={[styles.summaryNumber, { color: colors.success }]}>
+              {activeAlerts.filter(a => a.status === 'acknowledged').length}
             </Text>
-            <Text style={styles.summaryLabel}>Faibles</Text>
+            <Text style={styles.summaryLabel}>Traitées</Text>
           </View>
         </View>
       </View>
 
       {/* Alerts List */}
       <Text style={styles.sectionTitle}>
-        Alertes ({alerts.filter(a => !a.acknowledged).length} non traitées)
+        Alertes ({activeAlerts.filter(a => a.status === 'active').length} actives)
       </Text>
 
-      {alerts.length === 0 ? (
+      {activeAlerts.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="checkmark-circle-outline" size={64} color={colors.success} />
           <Text style={styles.emptyText}>Aucune alerte active</Text>
           <Text style={styles.emptySubtext}>Tous vos capteurs fonctionnent normalement</Text>
         </View>
       ) : (
-        alerts.map((alert) => (
-          <Pressable
-            key={alert.id}
-            style={({ pressed }) => [
+        activeAlerts.map((alert) => (
+          <View
+            key={`${alert.type}-${alert.id}`}
+            style={[
               styles.alertCard,
-              alert.acknowledged && styles.alertAcknowledged,
-              pressed && styles.alertPressed,
+              alert.status !== 'active' && styles.alertAcknowledged,
             ]}
-            onPress={() => acknowledgeAlert(alert.id)}
           >
             <View style={[styles.alertIndicator, { backgroundColor: getSeverityColor(alert.severity) }]} />
             
@@ -198,7 +128,7 @@ export default function AlertsScreen() {
             <View style={styles.alertContent}>
               <View style={styles.alertHeader}>
                 <Text style={styles.alertMessage}>{alert.message}</Text>
-                {!alert.acknowledged && (
+                {alert.status === 'active' && (
                   <View style={[styles.badge, { backgroundColor: getSeverityColor(alert.severity) + '20' }]}>
                     <Text style={[styles.badgeText, { color: getSeverityColor(alert.severity) }]}>
                       Nouveau
@@ -225,14 +155,28 @@ export default function AlertsScreen() {
                 </View>
               </View>
 
-              {alert.acknowledged && (
-                <View style={styles.acknowledgedBadge}>
-                  <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                  <Text style={styles.acknowledgedText}>Traitée</Text>
-                </View>
-              )}
+              <View style={styles.alertActions}>
+                {alert.status === 'active' && (
+                  <Pressable
+                    style={styles.actionButton}
+                    onPress={() => handleAcknowledge(alert.id, alert.type)}
+                  >
+                    <Ionicons name="checkmark-circle-outline" size={16} color={colors.accent[500]} />
+                    <Text style={styles.actionText}>Traiter</Text>
+                  </Pressable>
+                )}
+                {alert.status === 'acknowledged' && (
+                  <Pressable
+                    style={styles.actionButton}
+                    onPress={() => handleResolve(alert.id, alert.type)}
+                  >
+                    <Ionicons name="close-circle-outline" size={16} color={colors.success} />
+                    <Text style={styles.actionText}>Résoudre</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
-          </Pressable>
+          </View>
         ))
       )}
     </ScrollView>
@@ -302,14 +246,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.md,
     ...shadows.sm,
-    borderLeftWidth: 4,
-    borderLeftColor: 'transparent',
+    marginBottom: spacing.sm,
   },
   alertAcknowledged: {
-    opacity: 0.6,
-  },
-  alertPressed: {
-    opacity: 0.8,
+    opacity: 0.7,
   },
   alertIndicator: {
     width: 4,
@@ -357,7 +297,7 @@ const styles = StyleSheet.create({
   alertMeta: {
     flexDirection: 'row',
     gap: spacing.md,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   metaItem: {
     flexDirection: 'row',
@@ -368,16 +308,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.text.tertiary,
   },
-  acknowledgedBadge: {
+  alertActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.primary[50],
+    borderRadius: borderRadius.sm,
   },
-  acknowledgedText: {
+  actionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.success,
+    color: colors.accent[500],
   },
   emptyContainer: {
     alignItems: 'center',

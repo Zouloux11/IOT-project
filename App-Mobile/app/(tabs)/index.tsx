@@ -33,9 +33,9 @@ export default function DashboardScreen() {
     );
   };
 
-  const latestMic = sensorData.microphone[0]?.value || 0;
-  const latestDist = sensorData.distance[0]?.value || 0;
-  const latestMotion = sensorData.motion[0]?.value || false;
+  const latestMic = sensorData.microphone[0]?.decibels || 0;
+  const latestDist = sensorData.distance[0]?.distanceCm || 0;
+  const latestMotion = sensorData.motion[0]?.motionDetected || false;
 
   const getStatusColor = (type: 'mic' | 'dist' | 'motion') => {
     if (type === 'mic') {
@@ -48,103 +48,196 @@ export default function DashboardScreen() {
       if (latestDist > 50) return colors.warning;
       return colors.error;
     }
-    return latestMotion ? colors.error : colors.success;
+    return latestMotion ? colors.warning : colors.success;
   };
 
-  if (loading && !refreshing) {
+  const getStatusText = (type: 'mic' | 'dist' | 'motion') => {
+    if (type === 'mic') {
+      if (latestMic < 60) return 'Calme';
+      if (latestMic < 80) return 'Normal';
+      return 'Bruyant';
+    }
+    if (type === 'dist') {
+      if (latestDist > 100) return 'Loin';
+      if (latestDist > 50) return 'Proche';
+      return 'Très proche';
+    }
+    return latestMotion ? 'Détecté' : 'Aucun';
+  };
+
+  if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.accent[300]} />
-        <Text style={styles.loadingText}>Chargement...</Text>
+        <Text style={styles.loadingText}>Chargement des données...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 20 }]}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent[300]} />
-      }
-    >
-      {/* Test Notification Button */}
-      <Pressable style={styles.testButton} onPress={testNotification}>
-        <Ionicons name="notifications" size={20} color={colors.surface} />
-        <Text style={styles.testButtonText}>Tester les notifications</Text>
-      </Pressable>
-
-      {/* Status Cards */}
-      <View style={styles.grid}>
-        <View style={[styles.statusCard, { borderLeftColor: getStatusColor('mic'), borderLeftWidth: 4 }]}>
-          <Ionicons name="mic" size={32} color={getStatusColor('mic')} />
-          <View style={styles.statusInfo}>
-            <Text style={styles.statusLabel}>Microphone</Text>
-            <Text style={styles.statusValue}>{latestMic.toFixed(1)} dB</Text>
-            <Text style={styles.deviceId}>ESP_001</Text>
-          </View>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent[300]}
+            colors={[colors.accent[300]]}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* En-tête */}
+        <View style={styles.header}>
+          <Text style={styles.welcomeText}>Bienvenue</Text>
+          <Text style={styles.titleText}>IoT Dashboard</Text>
         </View>
 
-        <View style={[styles.statusCard, { borderLeftColor: getStatusColor('dist'), borderLeftWidth: 4 }]}>
-          <Ionicons name="expand" size={32} color={getStatusColor('dist')} />
-          <View style={styles.statusInfo}>
-            <Text style={styles.statusLabel}>Distance</Text>
-            <Text style={styles.statusValue}>{latestDist.toFixed(1)} cm</Text>
-            <Text style={styles.deviceId}>ESP_002</Text>
-          </View>
-        </View>
+        {/* Bouton test notification */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.testButton,
+            pressed && styles.testButtonPressed,
+          ]}
+          onPress={testNotification}
+        >
+          <Ionicons name="notifications" size={20} color={colors.surface} />
+          <Text style={styles.testButtonText}>Test Notification</Text>
+        </Pressable>
 
-        <View style={[styles.statusCard, { borderLeftColor: getStatusColor('motion'), borderLeftWidth: 4 }]}>
-          <Ionicons name="walk" size={32} color={getStatusColor('motion')} />
-          <View style={styles.statusInfo}>
-            <Text style={styles.statusLabel}>Mouvement</Text>
-            <Text style={styles.statusValue}>{latestMotion ? 'Détecté' : 'Aucun'}</Text>
-            <Text style={styles.deviceId}>ESP_004</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Quick Stats */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Statistiques rapides</Text>
-        <View style={styles.statsContainer}>
-          <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{sensorData.microphone.length}</Text>
-            <Text style={styles.statLabel}>Mesures Micro</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{sensorData.distance.length}</Text>
-            <Text style={styles.statLabel}>Mesures Distance</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{sensorData.motion.filter(m => m.value).length}</Text>
-            <Text style={styles.statLabel}>Mouvements</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Recent Activity */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Activité récente</Text>
-        {sensorData.motion.slice(0, 5).map((motion, index) => (
-          <View key={index} style={styles.activityItem}>
-            <Ionicons
-              name={motion.value ? 'warning' : 'checkmark-circle'}
-              size={24}
-              color={motion.value ? colors.error : colors.success}
-            />
-            <View style={styles.activityInfo}>
-              <Text style={styles.activityText}>
-                {motion.value ? 'Mouvement détecté' : 'Aucun mouvement'}
-              </Text>
-              <Text style={styles.activityTime}>
-                {new Date(motion.recordedAt).toLocaleString('fr-FR')}
+        {/* Cards de capteurs */}
+        <View style={styles.cardsContainer}>
+          {/* Card Microphone */}
+          <View style={[styles.card, shadows.md]}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.info + '20' }]}>
+                <Ionicons name="mic" size={24} color={colors.info} />
+              </View>
+              <View style={styles.cardHeaderText}>
+                <Text style={styles.cardTitle}>Microphone</Text>
+                <Text style={styles.cardSubtitle}>ESP_MIC_001</Text>
+              </View>
+            </View>
+            <View style={styles.cardBody}>
+              <Text style={styles.mainValue}>{latestMic.toFixed(1)}</Text>
+              <Text style={styles.unit}>dB</Text>
+            </View>
+            <View style={styles.cardFooter}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: getStatusColor('mic') + '20' },
+                ]}
+              >
+                <Text style={[styles.statusText, { color: getStatusColor('mic') }]}>
+                  {getStatusText('mic')}
+                </Text>
+              </View>
+              <Text style={styles.sampleCount}>
+                {sensorData.microphone.length} échantillons
               </Text>
             </View>
           </View>
-        ))}
-      </View>
-    </ScrollView>
+
+          {/* Card Distance */}
+          <View style={[styles.card, shadows.md]}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.success + '20' }]}>
+                <Ionicons name="resize" size={24} color={colors.success} />
+              </View>
+              <View style={styles.cardHeaderText}>
+                <Text style={styles.cardTitle}>Distance</Text>
+                <Text style={styles.cardSubtitle}>ESP_DIST_001</Text>
+              </View>
+            </View>
+            <View style={styles.cardBody}>
+              <Text style={styles.mainValue}>{latestDist.toFixed(1)}</Text>
+              <Text style={styles.unit}>cm</Text>
+            </View>
+            <View style={styles.cardFooter}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: getStatusColor('dist') + '20' },
+                ]}
+              >
+                <Text style={[styles.statusText, { color: getStatusColor('dist') }]}>
+                  {getStatusText('dist')}
+                </Text>
+              </View>
+              <Text style={styles.sampleCount}>
+                {sensorData.distance.length} échantillons
+              </Text>
+            </View>
+          </View>
+
+          {/* Card Motion */}
+          <View style={[styles.card, shadows.md]}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.warning + '20' }]}>
+                <Ionicons name="walk" size={24} color={colors.warning} />
+              </View>
+              <View style={styles.cardHeaderText}>
+                <Text style={styles.cardTitle}>Mouvement</Text>
+                <Text style={styles.cardSubtitle}>ESP_MOT_001</Text>
+              </View>
+            </View>
+            <View style={styles.cardBody}>
+              <View style={styles.motionIndicator}>
+                <Ionicons
+                  name={latestMotion ? 'checkmark-circle' : 'close-circle'}
+                  size={48}
+                  color={latestMotion ? colors.warning : colors.success}
+                />
+              </View>
+            </View>
+            <View style={styles.cardFooter}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: getStatusColor('motion') + '20' },
+                ]}
+              >
+                <Text style={[styles.statusText, { color: getStatusColor('motion') }]}>
+                  {getStatusText('motion')}
+                </Text>
+              </View>
+              <Text style={styles.sampleCount}>
+                {sensorData.motion.filter(m => m.motionDetected).length} détections
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Stats rapides */}
+        <View style={[styles.statsCard, shadows.sm]}>
+          <Text style={styles.statsTitle}>Statistiques rapides</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Moy. Mic</Text>
+              <Text style={styles.statValue}>
+                {(sensorData.microphone.reduce((a, b) => a + b.decibels, 0) /
+                  sensorData.microphone.length || 0).toFixed(1)} dB
+              </Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Moy. Dist</Text>
+              <Text style={styles.statValue}>
+                {(sensorData.distance.reduce((a, b) => a + b.distanceCm, 0) /
+                  sensorData.distance.length || 0).toFixed(1)} cm
+              </Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Total Mouvements</Text>
+              <Text style={styles.statValue}>
+                {sensorData.motion.filter(m => m.motionDetected).length}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -153,120 +246,152 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.lg,
-  },
-  centerContainer: {
-    flex: 1,
+  centered: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: spacing.md,
     fontSize: 16,
     color: colors.text.secondary,
   },
+  scrollContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  header: {
+    marginBottom: spacing.lg,
+  },
+  welcomeText: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
+  },
+  titleText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
   testButton: {
-    backgroundColor: colors.accent[500],
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    padding: spacing.md,
+    backgroundColor: colors.accent[500],
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
     ...shadows.sm,
+  },
+  testButtonPressed: {
+    opacity: 0.8,
   },
   testButtonText: {
     color: colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
-  grid: {
-    gap: spacing.md,
+  cardsContainer: {
+    gap: spacing.lg,
+    marginBottom: spacing.lg,
   },
-  statusCard: {
+  card: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
+  },
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    ...shadows.sm,
+    marginBottom: spacing.md,
   },
-  statusInfo: {
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  cardHeaderText: {
     flex: 1,
   },
-  statusLabel: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    marginBottom: 4,
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 2,
   },
-  statusValue: {
-    fontSize: 24,
+  cardSubtitle: {
+    fontSize: 13,
+    color: colors.text.secondary,
+  },
+  cardBody: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: spacing.md,
+  },
+  mainValue: {
+    fontSize: 42,
     fontWeight: '700',
     color: colors.text.primary,
-    marginBottom: 4,
+    marginRight: spacing.sm,
   },
-  deviceId: {
-    fontSize: 12,
-    color: colors.text.tertiary,
+  unit: {
+    fontSize: 20,
+    color: colors.text.secondary,
+    fontWeight: '500',
   },
-  section: {
+  motionIndicator: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  statusBadge: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sampleCount: {
+    fontSize: 13,
+    color: colors.text.secondary,
+  },
+  statsCard: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    ...shadows.sm,
   },
-  sectionTitle: {
+  statsTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text.primary,
     marginBottom: spacing.md,
   },
-  statsContainer: {
+  statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: spacing.sm,
   },
-  statBox: {
+  statItem: {
     flex: 1,
     alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: colors.primary[50],
-    borderRadius: borderRadius.md,
-  },
-  statNumber: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.accent[500],
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.text.secondary,
-    marginTop: 4,
-    textAlign: 'center',
+    marginBottom: spacing.xs,
   },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.primary[100],
-  },
-  activityInfo: {
-    flex: 1,
-  },
-  activityText: {
-    fontSize: 14,
+  statValue: {
+    fontSize: 18,
     fontWeight: '600',
-    color: colors.text.primary,
-  },
-  activityTime: {
-    fontSize: 12,
-    color: colors.text.tertiary,
-    marginTop: 2,
+    color: colors.accent[500],
   },
 });
