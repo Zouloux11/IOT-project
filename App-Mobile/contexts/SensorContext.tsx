@@ -47,8 +47,9 @@ export const SensorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refreshData = async () => {
-    setLoading(true);
+  const refreshData = async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
+    
     try {
       // Récupérer l'historique des capteurs
       const [micData, distData, motionData] = await Promise.all([
@@ -68,7 +69,7 @@ export const SensorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (error) {
       console.error('Error fetching sensor data:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -84,7 +85,7 @@ export const SensorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         ...micAlerts.map(a => ({
           id: a.id,
           type: 'microphone' as const,
-          severity: a.decibels >= 100 ? 'high' : 'medium' as const,
+          severity: (a.decibels >= 100 ? 'high' : 'medium') as 'high' | 'medium',
           message: `Niveau sonore élevé: ${a.decibels.toFixed(1)} dB (seuil: ${a.thresholdExceeded} dB)`,
           value: a.decibels,
           timestamp: a.createdAt,
@@ -95,7 +96,7 @@ export const SensorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         ...distAlerts.map(a => ({
           id: a.id,
           type: 'distance' as const,
-          severity: a.distanceCm < 10 ? 'high' : 'medium' as const,
+          severity: (a.distanceCm < 10 ? 'high' : 'medium') as 'high' | 'medium',
           message: `Distance ${a.thresholdType}: ${a.distanceCm.toFixed(1)} cm (depuis ${a.thresholdValue.toFixed(1)} cm)`,
           value: a.distanceCm,
           timestamp: a.createdAt,
@@ -157,8 +158,12 @@ export const SensorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   useEffect(() => {
-    refreshData();
-    const interval = setInterval(refreshData, 5000);
+    // Premier chargement avec loading
+    refreshData(false);
+    
+    // Refresh automatique toutes les secondes (en arrière-plan, sans loading)
+    const interval = setInterval(() => refreshData(true), 1000);
+    
     return () => clearInterval(interval);
   }, []);
 
@@ -167,7 +172,7 @@ export const SensorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       sensorData, 
       alerts, 
       loading, 
-      refreshData,
+      refreshData: () => refreshData(false),
       acknowledgeAlert,
       resolveAlert
     }}>

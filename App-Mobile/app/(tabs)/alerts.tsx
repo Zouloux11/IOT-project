@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { borderRadius, colors, shadows, spacing } from '../../constants/theme';
@@ -24,162 +24,249 @@ export default function AlertsScreen() {
     setRefreshing(false);
   };
 
-  const handleAcknowledge = async (id: number, type: 'microphone' | 'distance' | 'motion') => {
-    await acknowledgeAlert(id, type);
-  };
+  const activeAlerts = alerts.filter(a => a.status === 'active');
+  const acknowledgedAlerts = alerts.filter(a => a.status === 'acknowledged');
+  const resolvedAlerts = alerts.filter(a => a.status === 'resolved');
 
-  const handleResolve = async (id: number, type: 'microphone' | 'distance' | 'motion') => {
-    await resolveAlert(id, type);
-  };
-
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: 'low' | 'medium' | 'high') => {
     switch (severity) {
-      case 'high': return colors.error;
-      case 'medium': return colors.warning;
-      case 'low': return colors.info;
-      default: return colors.text.tertiary;
+      case 'high':
+        return colors.error;
+      case 'medium':
+        return colors.warning;
+      case 'low':
+        return colors.info;
+      default:
+        return colors.text.secondary;
     }
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: 'microphone' | 'distance' | 'motion') => {
     switch (type) {
-      case 'microphone': return 'mic';
-      case 'distance': return 'expand';
-      case 'motion': return 'walk';
-      default: return 'alert-circle';
+      case 'microphone':
+        return 'mic';
+      case 'distance':
+        return 'resize';
+      case 'motion':
+        return 'walk';
     }
   };
 
-  // Filtrer pour n'afficher que les alertes non résolues
-  const activeAlerts = alerts.filter(a => a.status !== 'resolved');
+  const getTypeLabel = (type: 'microphone' | 'distance' | 'motion') => {
+    switch (type) {
+      case 'microphone':
+        return 'Microphone';
+      case 'distance':
+        return 'Distance';
+      case 'motion':
+        return 'Mouvement';
+    }
+  };
 
-  if (loading && !refreshing) {
+  const AlertCard = ({ alert }: { alert: any }) => {
+    const severityColor = getSeverityColor(alert.severity);
+    
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.alertCard, shadows.md]}>
+        <View style={styles.alertLeft}>
+          <View style={[styles.severityIndicator, { backgroundColor: severityColor }]} />
+          <View style={styles.alertContent}>
+            <View style={styles.alertHeader}>
+              <View style={styles.alertTypeRow}>
+                <View style={[styles.alertIconContainer, { backgroundColor: severityColor + '15' }]}>
+                  <Ionicons name={getTypeIcon(alert.type)} size={16} color={severityColor} />
+                </View>
+                <Text style={styles.alertType}>{getTypeLabel(alert.type)}</Text>
+              </View>
+              <View style={styles.deviceBadge}>
+                <Text style={styles.deviceText}>{alert.deviceId}</Text>
+              </View>
+            </View>
+            
+            <Text style={styles.alertMessage}>{alert.message}</Text>
+            
+            <View style={styles.alertFooter}>
+              <View style={styles.alertTime}>
+                <Ionicons name="time-outline" size={14} color={colors.text.tertiary} />
+                <Text style={styles.alertTimeText}>
+                  {new Date(alert.timestamp).toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            {alert.status === 'active' && (
+              <View style={styles.alertActions}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    styles.acknowledgeButton,
+                    pressed && styles.actionButtonPressed,
+                  ]}
+                  onPress={() => acknowledgeAlert(alert.id, alert.type)}
+                >
+                  <Ionicons name="checkmark" size={16} color={colors.surface} />
+                  <Text style={styles.actionButtonText}>Traiter</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    styles.resolveButton,
+                    pressed && styles.actionButtonPressed,
+                  ]}
+                  onPress={() => resolveAlert(alert.id, alert.type)}
+                >
+                  <Ionicons name="close" size={16} color={colors.surface} />
+                  <Text style={styles.actionButtonText}>Résoudre</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {alert.status === 'acknowledged' && (
+              <View style={styles.alertActions}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    styles.resolveButton,
+                    pressed && styles.actionButtonPressed,
+                  ]}
+                  onPress={() => resolveAlert(alert.id, alert.type)}
+                >
+                  <Ionicons name="checkmark-done" size={16} color={colors.surface} />
+                  <Text style={styles.actionButtonText}>Résoudre</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.accent[300]} />
-        <Text style={styles.loadingText}>Chargement...</Text>
+        <Text style={styles.loadingText}>Chargement des alertes...</Text>
+      </View>
+    );
+  }
+
+  if (alerts.length === 0) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, styles.centered]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.accent[300]}
+              colors={[colors.accent[300]]}
+            />
+          }
+        >
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="notifications-off-outline" size={64} color={colors.text.tertiary} />
+            </View>
+            <Text style={styles.emptyText}>Aucune alerte</Text>
+            <Text style={styles.emptySubtext}>Tout va bien ! 👍</Text>
+          </View>
+        </ScrollView>
       </View>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 20 }]}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent[300]} />
-      }
-    >
-      {/* Summary */}
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Résumé des alertes</Text>
-        <View style={styles.summaryStats}>
-          <View style={styles.summaryItem}>
-            <Text style={[styles.summaryNumber, { color: colors.error }]}>
-              {activeAlerts.filter(a => a.severity === 'high').length}
-            </Text>
-            <Text style={styles.summaryLabel}>Critiques</Text>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent[300]}
+            colors={[colors.accent[300]]}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Stats Header */}
+        <View style={styles.statsContainer}>
+          <View style={[styles.statCard, { borderLeftColor: colors.error }]}>
+            <Text style={styles.statNumber}>{activeAlerts.length}</Text>
+            <Text style={styles.statLabel}>Actives</Text>
           </View>
-          <View style={styles.summaryItem}>
-            <Text style={[styles.summaryNumber, { color: colors.warning }]}>
-              {activeAlerts.filter(a => a.severity === 'medium').length}
-            </Text>
-            <Text style={styles.summaryLabel}>Moyennes</Text>
+          <View style={[styles.statCard, { borderLeftColor: colors.warning }]}>
+            <Text style={styles.statNumber}>{acknowledgedAlerts.length}</Text>
+            <Text style={styles.statLabel}>Traitées</Text>
           </View>
-          <View style={styles.summaryItem}>
-            <Text style={[styles.summaryNumber, { color: colors.success }]}>
-              {activeAlerts.filter(a => a.status === 'acknowledged').length}
-            </Text>
-            <Text style={styles.summaryLabel}>Traitées</Text>
+          <View style={[styles.statCard, { borderLeftColor: colors.success }]}>
+            <Text style={styles.statNumber}>{resolvedAlerts.length}</Text>
+            <Text style={styles.statLabel}>Résolues</Text>
           </View>
         </View>
-      </View>
 
-      {/* Alerts List */}
-      <Text style={styles.sectionTitle}>
-        Alertes ({activeAlerts.filter(a => a.status === 'active').length} actives)
-      </Text>
-
-      {activeAlerts.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="checkmark-circle-outline" size={64} color={colors.success} />
-          <Text style={styles.emptyText}>Aucune alerte active</Text>
-          <Text style={styles.emptySubtext}>Tous vos capteurs fonctionnent normalement</Text>
-        </View>
-      ) : (
-        activeAlerts.map((alert) => (
-          <View
-            key={`${alert.type}-${alert.id}`}
-            style={[
-              styles.alertCard,
-              alert.status !== 'active' && styles.alertAcknowledged,
-            ]}
-          >
-            <View style={[styles.alertIndicator, { backgroundColor: getSeverityColor(alert.severity) }]} />
-            
-            <View style={styles.alertIcon}>
-              <Ionicons 
-                name={getTypeIcon(alert.type)} 
-                size={24} 
-                color={getSeverityColor(alert.severity)} 
-              />
-            </View>
-
-            <View style={styles.alertContent}>
-              <View style={styles.alertHeader}>
-                <Text style={styles.alertMessage}>{alert.message}</Text>
-                {alert.status === 'active' && (
-                  <View style={[styles.badge, { backgroundColor: getSeverityColor(alert.severity) + '20' }]}>
-                    <Text style={[styles.badgeText, { color: getSeverityColor(alert.severity) }]}>
-                      Nouveau
-                    </Text>
-                  </View>
-                )}
+        {/* Active Alerts */}
+        {activeAlerts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionDot, { backgroundColor: colors.error }]} />
+                <Text style={styles.sectionTitle}>Alertes actives</Text>
               </View>
-
-              <View style={styles.alertMeta}>
-                <View style={styles.metaItem}>
-                  <Ionicons name="hardware-chip-outline" size={12} color={colors.text.tertiary} />
-                  <Text style={styles.metaText}>{alert.deviceId}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Ionicons name="time-outline" size={12} color={colors.text.tertiary} />
-                  <Text style={styles.metaText}>
-                    {new Date(alert.timestamp).toLocaleString('fr-FR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      day: '2-digit',
-                      month: 'short',
-                    })}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.alertActions}>
-                {alert.status === 'active' && (
-                  <Pressable
-                    style={styles.actionButton}
-                    onPress={() => handleAcknowledge(alert.id, alert.type)}
-                  >
-                    <Ionicons name="checkmark-circle-outline" size={16} color={colors.accent[500]} />
-                    <Text style={styles.actionText}>Traiter</Text>
-                  </Pressable>
-                )}
-                {alert.status === 'acknowledged' && (
-                  <Pressable
-                    style={styles.actionButton}
-                    onPress={() => handleResolve(alert.id, alert.type)}
-                  >
-                    <Ionicons name="close-circle-outline" size={16} color={colors.success} />
-                    <Text style={styles.actionText}>Résoudre</Text>
-                  </Pressable>
-                )}
+              <View style={styles.sectionBadge}>
+                <Text style={styles.sectionBadgeText}>{activeAlerts.length}</Text>
               </View>
             </View>
+            {activeAlerts.map((alert) => (
+              <AlertCard key={`${alert.type}-${alert.id}`} alert={alert} />
+            ))}
           </View>
-        ))
-      )}
-    </ScrollView>
+        )}
+
+        {/* Acknowledged Alerts */}
+        {acknowledgedAlerts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionDot, { backgroundColor: colors.warning }]} />
+                <Text style={styles.sectionTitle}>Alertes traitées</Text>
+              </View>
+              <View style={styles.sectionBadge}>
+                <Text style={styles.sectionBadgeText}>{acknowledgedAlerts.length}</Text>
+              </View>
+            </View>
+            {acknowledgedAlerts.map((alert) => (
+              <AlertCard key={`${alert.type}-${alert.id}`} alert={alert} />
+            ))}
+          </View>
+        )}
+
+        {/* Resolved Alerts */}
+        {resolvedAlerts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionDot, { backgroundColor: colors.success }]} />
+                <Text style={styles.sectionTitle}>Alertes résolues</Text>
+              </View>
+              <View style={styles.sectionBadge}>
+                <Text style={styles.sectionBadgeText}>{resolvedAlerts.length}</Text>
+              </View>
+            </View>
+            {resolvedAlerts.map((alert) => (
+              <AlertCard key={`${alert.type}-${alert.id}`} alert={alert} />
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -188,159 +275,204 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  centerContainer: {
+  centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: spacing.md,
     fontSize: 16,
     color: colors.text.secondary,
   },
-  summaryCard: {
+  scrollContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  statCard: {
+    flex: 1,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    ...shadows.md,
+    borderLeftWidth: 4,
+    ...shadows.sm,
   },
-  summaryTitle: {
-    fontSize: 16,
+  statNumber: {
+    fontSize: 28,
     fontWeight: '700',
     color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  section: {
+    marginBottom: spacing.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
-  summaryStats: {
+  sectionHeaderLeft: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  summaryItem: {
     alignItems: 'center',
+    gap: spacing.sm,
   },
-  summaryNumber: {
-    fontSize: 32,
-    fontWeight: '700',
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: colors.text.tertiary,
-    marginTop: 4,
+  sectionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: colors.text.primary,
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
+  },
+  sectionBadge: {
+    backgroundColor: colors.primary[100],
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+  },
+  sectionBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl * 2,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginBottom: spacing.sm,
+  },
+  emptySubtext: {
+    fontSize: 16,
+    color: colors.text.tertiary,
   },
   alertCard: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+  },
+  alertLeft: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    ...shadows.sm,
-    marginBottom: spacing.sm,
   },
-  alertAcknowledged: {
-    opacity: 0.7,
-  },
-  alertIndicator: {
+  severityIndicator: {
     width: 4,
-    height: '100%',
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    borderTopLeftRadius: borderRadius.lg,
-    borderBottomLeftRadius: borderRadius.lg,
-  },
-  alertIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.primary[50],
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   alertContent: {
     flex: 1,
+    padding: spacing.lg,
   },
   alertHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
-  alertMessage: {
-    flex: 1,
+  alertTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  alertIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertType: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text.primary,
-    lineHeight: 20,
   },
-  badge: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
+  deviceBadge: {
+    backgroundColor: colors.primary[100],
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
     borderRadius: borderRadius.sm,
-    marginLeft: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.primary[200],
   },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+  deviceText: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    color: colors.text.secondary,
+    fontWeight: '500',
   },
-  alertMeta: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.sm,
+  alertMessage: {
+    fontSize: 14,
+    color: colors.text.primary,
+    lineHeight: 20,
+    marginBottom: spacing.md,
   },
-  metaItem: {
+  alertFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
   },
-  metaText: {
-    fontSize: 11,
+  alertTime: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  alertTimeText: {
+    fontSize: 12,
     color: colors.text.tertiary,
   },
   alertActions: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
   },
   actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    backgroundColor: colors.primary[50],
-    borderRadius: borderRadius.sm,
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
   },
-  actionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.accent[500],
+  acknowledgeButton: {
+    backgroundColor: colors.warning,
   },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl * 2,
+  resolveButton: {
+    backgroundColor: colors.success,
   },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginTop: spacing.md,
+  actionButtonPressed: {
+    opacity: 0.7,
   },
-  emptySubtext: {
+  actionButtonText: {
+    color: colors.surface,
     fontSize: 14,
-    color: colors.text.tertiary,
-    marginTop: spacing.xs,
-    textAlign: 'center',
+    fontWeight: '600',
   },
 });
