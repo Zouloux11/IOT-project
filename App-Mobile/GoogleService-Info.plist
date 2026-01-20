@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>fr.iot.mobile</string>
+	<string>iot.project.alt</string>
 	<key>PROJECT_ID</key>
 	<string>iot</string>
 	<key>STORAGE_BUCKET</key>

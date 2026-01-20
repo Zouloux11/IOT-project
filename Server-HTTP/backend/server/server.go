@@ -42,4 +42,5 @@ func (s *Server) addRESHandlers() {
 	s.addDistanceHandler()
 	s.addMotionHandler()
 	s.addAlertsHandlers()
+	s.addNotificationHandler()
 }

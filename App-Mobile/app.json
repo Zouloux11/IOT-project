@@ -6,30 +6,32 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "iot",
-    "icon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+    "icon": "./assets/icons/image.png",
     "splash": {
-      "image": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+      "image": "./assets/icons/image.png",
       "resizeMode": "contain",
       "backgroundColor": "#1a202c"
     },
     "notification": {
-      "icon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+      "icon": "./assets/icons/image.png",
       "color": "#f6ad55"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "fr.iot.mobile",
+      "bundleIdentifier": "iot.project.alt",
       "googleServicesFile": "./GoogleService-Info.plist",
-      "icon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png"
+      "icon": "./assets/icons/image.png"
     },
     "android": {
-      "package": "fr.iot.mobile",
+      "package": "iot.project.alt",
       "versionCode": 1,
       "googleServicesFile": "./google-services.json",
-      "icon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+      "icon": "./assets/icons/image.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+        "foregroundImage": "./assets/icons/image.png",
         "backgroundColor": "#1a202c"
       },
       "permissions": [
@@ -39,14 +41,14 @@
       ]
     },
     "web": {
-      "favicon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png"
+      "favicon": "./assets/icons/image.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-notifications",
         {
-          "icon": "./assets/icons/Gemini_Generated_Image_sttqc8sttqc8sttq.png",
+          "icon": "./assets/icons/image.png",
           "color": "#f6ad55"
         }
       ]
@@ -54,7 +56,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b9d6f051-2235-44bc-a388-c6b36009a35a"
+        "projectId": "cf859017-5fb5-4e3e-a791-604051278c79"
       }
     }
   }
