@@ -1,6 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../constants/theme';
 
@@ -10,14 +8,17 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.accent[300],
+        tabBarActiveTintColor: colors.accent[500],
         tabBarInactiveTintColor: colors.text.secondary,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.primary[200],
-          height: 65 + insets.bottom,
+          borderTopWidth: 1,
+          height: 60 + insets.bottom,
           paddingBottom: insets.bottom,
           paddingTop: 8,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -28,42 +29,37 @@ export default function TabLayout() {
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.primary[200],
+          elevation: 0,
+          shadowOpacity: 0,
         },
         headerTintColor: colors.text.primary,
         headerTitleStyle: {
-          fontWeight: '700',
-          fontSize: 20,
+          fontWeight: '600',
+          fontSize: 18,
+        },
+        tabBarIconStyle: {
+          display: 'none',
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard',
-          headerTitle: '🏠 IoT Dashboard',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid-outline" size={size} color={color} />
-          ),
+          title: 'Capteurs',
+          headerTitle: 'Capteurs IoT',
         }}
       />
       <Tabs.Screen
         name="sensors"
         options={{
-          title: 'Capteurs',
-          headerTitle: '📊 Capteurs',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="hardware-chip-outline" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
         name="alerts"
         options={{
           title: 'Alertes',
-          headerTitle: '🔔 Alertes',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="notifications-outline" size={size} color={color} />
-          ),
+          headerTitle: 'Alertes',
         }}
       />
     </Tabs>

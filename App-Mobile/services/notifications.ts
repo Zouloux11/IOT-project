@@ -54,7 +54,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
 export async function sendPushTokenToBackend(token: string): Promise<void> {
   try {
     const response = await fetch(
-      'https://api.loiccapdeville.fr/api/notifications/register',
+      'https://api.loiccapdeville.fr/api/sensormanager/notifications/register',
       {
         method: 'POST',
         headers: {

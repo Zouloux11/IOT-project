@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -37,8 +36,8 @@ export default function DashboardScreen() {
       borderRadius: borderRadius.lg,
     },
     propsForDots: {
-      r: '3',
-      strokeWidth: '2',
+      r: '2',
+      strokeWidth: '1',
       stroke: colors.accent[500],
     },
   };
@@ -46,7 +45,7 @@ export default function DashboardScreen() {
   const getMicrophoneChartData = () => {
     const data = [...sensorData.microphone].reverse();
     return {
-      labels: data.map((_, i) => (i % 10 === 0 ? i.toString() : '')),
+      labels: data.map((_, i) => (i % 20 === 0 ? i.toString() : '')),
       datasets: [{
         data: data.length > 0 ? data.map(d => d.decibels) : [0],
       }],
@@ -56,7 +55,7 @@ export default function DashboardScreen() {
   const getDistanceChartData = () => {
     const data = [...sensorData.distance].reverse();
     return {
-      labels: data.map((_, i) => (i % 10 === 0 ? i.toString() : '')),
+      labels: data.map((_, i) => (i % 20 === 0 ? i.toString() : '')),
       datasets: [{
         data: data.length > 0 ? data.map(d => d.distanceCm) : [0],
       }],
@@ -67,32 +66,9 @@ export default function DashboardScreen() {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.accent[300]} />
-        <Text style={styles.loadingText}>Chargement des capteurs...</Text>
       </View>
     );
   }
-
-  const latestMic = sensorData.microphone[0]?.decibels || 0;
-  const latestDist = sensorData.distance[0]?.distanceCm || 0;
-  const avgMic = sensorData.microphone.length > 0
-    ? sensorData.microphone.reduce((sum, d) => sum + d.decibels, 0) / sensorData.microphone.length
-    : 0;
-  const maxMic = sensorData.microphone.length > 0
-    ? Math.max(...sensorData.microphone.map(d => d.decibels))
-    : 0;
-  const minMic = sensorData.microphone.length > 0
-    ? Math.min(...sensorData.microphone.map(d => d.decibels))
-    : 0;
-
-  const avgDist = sensorData.distance.length > 0
-    ? sensorData.distance.reduce((sum, d) => sum + d.distanceCm, 0) / sensorData.distance.length
-    : 0;
-  const maxDist = sensorData.distance.length > 0
-    ? Math.max(...sensorData.distance.map(d => d.distanceCm))
-    : 0;
-  const minDist = sensorData.distance.length > 0
-    ? Math.min(...sensorData.distance.map(d => d.distanceCm))
-    : 0;
 
   const totalMotionDetections = sensorData.motion.filter(m => m.motionDetected).length;
 
@@ -110,51 +86,21 @@ export default function DashboardScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Microphone Section */}
-        <View style={[styles.card, shadows.md]}>
+        {/* Microphone */}
+        <View style={[styles.card, shadows.sm]}>
           <View style={styles.cardHeader}>
-            <View style={styles.cardHeaderLeft}>
-              <Text style={styles.cardTitle}>Microphone</Text>
-              <View style={styles.deviceBadge}>
-                <Text style={styles.deviceText}>ESP_001</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.metricsGrid}>
-            <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>Actuel</Text>
-              <Text style={[styles.metricValue, styles.metricValueLarge]}>
-                {latestMic.toFixed(1)}
-              </Text>
-              <Text style={styles.metricUnit}>dB</Text>
-            </View>
-            <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>Moyenne</Text>
-              <Text style={styles.metricValue}>{avgMic.toFixed(1)}</Text>
-              <Text style={styles.metricUnit}>dB</Text>
-            </View>
-            <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>Max</Text>
-              <Text style={styles.metricValue}>{maxMic.toFixed(1)}</Text>
-              <Text style={styles.metricUnit}>dB</Text>
-            </View>
-            <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>Min</Text>
-              <Text style={styles.metricValue}>{minMic.toFixed(1)}</Text>
-              <Text style={styles.metricUnit}>dB</Text>
+            <Text style={styles.cardTitle}>Microphone</Text>
+            <View style={styles.deviceBadge}>
+              <Text style={styles.deviceText}>ESP_001</Text>
             </View>
           </View>
 
           {sensorData.microphone.length > 0 && (
-            <View style={styles.chartSection}>
-              <Text style={styles.chartTitle}>
-                Dernières {sensorData.microphone.length} mesures
-              </Text>
+            <View style={styles.chartContainer}>
               <LineChart
                 data={getMicrophoneChartData()}
                 width={screenWidth - 2 * spacing.lg - 2 * spacing.lg}
-                height={200}
+                height={180}
                 chartConfig={chartConfig}
                 bezier
                 style={styles.chart}
@@ -166,73 +112,39 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Échantillons</Text>
-              <Text style={styles.infoValue}>{sensorData.microphone.length}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Dernière mise à jour</Text>
-              <Text style={styles.infoValue}>
-                {sensorData.microphone[0]
-                  ? new Date(sensorData.microphone[0].recordedAt).toLocaleTimeString('fr-FR')
-                  : 'N/A'}
-              </Text>
-            </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              {sensorData.microphone.length} échantillons
+            </Text>
+            <Text style={styles.footerText}>
+              {sensorData.microphone[0]
+                ? new Date(sensorData.microphone[0].recordedAt).toLocaleTimeString('fr-FR')
+                : 'N/A'}
+            </Text>
           </View>
         </View>
 
-        {/* Distance Section */}
-        <View style={[styles.card, shadows.md]}>
+        {/* Distance */}
+        <View style={[styles.card, shadows.sm]}>
           <View style={styles.cardHeader}>
-            <View style={styles.cardHeaderLeft}>
-              <Text style={styles.cardTitle}>Distance</Text>
-              <View style={styles.deviceBadge}>
-                <Text style={styles.deviceText}>ESP_002</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.metricsGrid}>
-            <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>Actuel</Text>
-              <Text style={[styles.metricValue, styles.metricValueLarge]}>
-                {latestDist.toFixed(1)}
-              </Text>
-              <Text style={styles.metricUnit}>cm</Text>
-            </View>
-            <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>Moyenne</Text>
-              <Text style={styles.metricValue}>{avgDist.toFixed(1)}</Text>
-              <Text style={styles.metricUnit}>cm</Text>
-            </View>
-            <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>Max</Text>
-              <Text style={styles.metricValue}>{maxDist.toFixed(1)}</Text>
-              <Text style={styles.metricUnit}>cm</Text>
-            </View>
-            <View style={styles.metricBox}>
-              <Text style={styles.metricLabel}>Min</Text>
-              <Text style={styles.metricValue}>{minDist.toFixed(1)}</Text>
-              <Text style={styles.metricUnit}>cm</Text>
+            <Text style={styles.cardTitle}>Distance</Text>
+            <View style={styles.deviceBadge}>
+              <Text style={styles.deviceText}>ESP_002</Text>
             </View>
           </View>
 
           {sensorData.distance.length > 0 && (
-            <View style={styles.chartSection}>
-              <Text style={styles.chartTitle}>
-                Dernières {sensorData.distance.length} mesures
-              </Text>
+            <View style={styles.chartContainer}>
               <LineChart
                 data={getDistanceChartData()}
                 width={screenWidth - 2 * spacing.lg - 2 * spacing.lg}
-                height={200}
+                height={180}
                 chartConfig={{
                   ...chartConfig,
                   color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
                   propsForDots: {
-                    r: '3',
-                    strokeWidth: '2',
+                    r: '2',
+                    strokeWidth: '1',
                     stroke: colors.success,
                   },
                 }}
@@ -246,60 +158,53 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Échantillons</Text>
-              <Text style={styles.infoValue}>{sensorData.distance.length}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Dernière mise à jour</Text>
-              <Text style={styles.infoValue}>
-                {sensorData.distance[0]
-                  ? new Date(sensorData.distance[0].recordedAt).toLocaleTimeString('fr-FR')
-                  : 'N/A'}
-              </Text>
-            </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              {sensorData.distance.length} échantillons
+            </Text>
+            <Text style={styles.footerText}>
+              {sensorData.distance[0]
+                ? new Date(sensorData.distance[0].recordedAt).toLocaleTimeString('fr-FR')
+                : 'N/A'}
+            </Text>
           </View>
         </View>
 
-        {/* Motion Section */}
-        <View style={[styles.card, shadows.md]}>
+        {/* Motion */}
+        <View style={[styles.card, shadows.sm]}>
           <View style={styles.cardHeader}>
-            <View style={styles.cardHeaderLeft}>
-              <Text style={styles.cardTitle}>Détection de mouvement</Text>
-              <View style={styles.deviceBadge}>
-                <Text style={styles.deviceText}>ESP_004</Text>
-              </View>
+            <Text style={styles.cardTitle}>Détection de mouvement</Text>
+            <View style={styles.deviceBadge}>
+              <Text style={styles.deviceText}>ESP_004</Text>
             </View>
           </View>
 
           <View style={styles.motionStats}>
-            <View style={styles.motionStatBox}>
-              <Text style={styles.motionStatLabel}>Total Détections</Text>
-              <Text style={styles.motionStatValue}>{totalMotionDetections}</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Détections</Text>
+              <Text style={styles.statValue}>{totalMotionDetections}</Text>
             </View>
-            <View style={styles.motionStatBox}>
-              <Text style={styles.motionStatLabel}>Total Échantillons</Text>
-              <Text style={styles.motionStatValue}>{sensorData.motion.length}</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Échantillons</Text>
+              <Text style={styles.statValue}>{sensorData.motion.length}</Text>
             </View>
           </View>
 
-          <View style={styles.motionHistory}>
-            <Text style={styles.chartTitle}>Dernières détections</Text>
-            {sensorData.motion.filter(m => m.motionDetected).slice(0, 10).length > 0 ? (
+          <View style={styles.motionList}>
+            {sensorData.motion.filter(m => m.motionDetected).slice(0, 5).length > 0 ? (
               sensorData.motion
                 .filter(m => m.motionDetected)
-                .slice(0, 10)
+                .slice(0, 5)
                 .map((motion, index) => (
-                  <View key={index} style={styles.historyItem}>
-                    <Ionicons name="checkmark-circle" size={18} color={colors.warning} />
-                    <Text style={styles.historyTime}>
+                  <View key={index} style={styles.motionItem}>
+                    <View style={styles.motionDot} />
+                    <Text style={styles.motionTime}>
                       {new Date(motion.recordedAt).toLocaleString('fr-FR')}
                     </Text>
                   </View>
                 ))
             ) : (
-              <Text style={styles.noHistory}>Aucune détection récente</Text>
+              <Text style={styles.emptyText}>Aucune détection</Text>
             )}
           </View>
         </View>
@@ -317,159 +222,105 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    marginTop: spacing.md,
-    fontSize: 16,
-    color: colors.text.secondary,
-  },
   scrollContent: {
     padding: spacing.lg,
     paddingBottom: spacing.xl,
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
   cardHeader: {
-    marginBottom: spacing.lg,
-  },
-  cardHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text.primary,
   },
   deviceBadge: {
-    backgroundColor: colors.primary[100],
+    backgroundColor: colors.background,
     paddingHorizontal: spacing.md,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: borderRadius.sm,
     borderWidth: 1,
     borderColor: colors.primary[200],
   },
   deviceText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'monospace',
     color: colors.text.secondary,
     fontWeight: '500',
   },
-  metricsGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  metricBox: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.primary[100],
-  },
-  metricLabel: {
-    fontSize: 11,
-    color: colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.xs,
-  },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  metricValueLarge: {
-    fontSize: 24,
-  },
-  metricUnit: {
-    fontSize: 11,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
-  chartSection: {
-    marginBottom: spacing.lg,
-  },
-  chartTitle: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  chartContainer: {
     marginBottom: spacing.md,
   },
   chart: {
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.sm,
   },
-  infoRow: {
+  footer: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.primary[100],
   },
-  infoItem: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.primary[100],
-  },
-  infoLabel: {
-    fontSize: 11,
+  footerText: {
+    fontSize: 12,
     color: colors.text.secondary,
-    marginBottom: spacing.xs,
-  },
-  infoValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text.primary,
   },
   motionStats: {
     flexDirection: 'row',
     gap: spacing.md,
     marginBottom: spacing.lg,
   },
-  motionStatBox: {
+  statItem: {
     flex: 1,
     backgroundColor: colors.background,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.sm,
     padding: spacing.lg,
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.primary[100],
   },
-  motionStatLabel: {
-    fontSize: 12,
+  statLabel: {
+    fontSize: 11,
     color: colors.text.secondary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  motionStatValue: {
-    fontSize: 32,
+  statValue: {
+    fontSize: 28,
     fontWeight: '700',
-    color: colors.accent[500],
+    color: colors.text.primary,
   },
-  motionHistory: {
-    gap: spacing.xs,
+  motionList: {
+    gap: spacing.sm,
   },
-  historyItem: {
+  motionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.xs,
   },
-  historyTime: {
+  motionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.accent[500],
+  },
+  motionTime: {
     fontSize: 13,
     color: colors.text.secondary,
   },
-  noHistory: {
+  emptyText: {
     fontSize: 13,
     color: colors.text.tertiary,
-    fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: spacing.lg,
   },
