@@ -82,7 +82,7 @@ async def main():
     root.add_resource(['microphone'], SensorResource('microphone'))
     root.add_resource(['motion'], SensorResource('motion'))
     
-    SERVER_IP = '192.168.52.241'
+    SERVER_IP = '192.168.40.241'
     SERVER_PORT = 4832
     
     await aiocoap.Context.create_server_context(root, bind=(SERVER_IP, SERVER_PORT))

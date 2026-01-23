@@ -21,9 +21,9 @@ type sensorsStore struct{ baseStore *Store }
 var _ sensormanager.SensorManager = (*sensorsStore)(nil)
 
 const (
-	MicrophoneThresholdDB        = 80.0
+	MicrophoneThresholdDB        = 60.0
 	DistanceVariationThresholdCM = 30.0
-	AlertCooldownSeconds         = 30
+	AlertCooldownSeconds         = 10
 )
 
 type lastValue struct {

@@ -54,6 +54,9 @@ func (p *MicrophoneParams) Sanitize() error {
 	if p.Decibels < 0 {
 		return errors.New("decibels must be positive")
 	}
+	if p.Decibels > 115 {
+		return errors.New("decibels must be positive")
+	}
 	return nil
 }
 
