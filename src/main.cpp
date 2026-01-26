@@ -3,9 +3,9 @@
 #include <WiFiUdp.h>
 #include <coap-simple.h>
 #include <HCSR04.h>
-#include <Wire.h>
-#include <Adafruit_I2S.h>
-#include <Adafruit_MAX98357A.h>
+#include <AudioOutputI2S.h>
+#include <AudioGeneratorWAV.h>
+#include <AudioFileSourcePROGMEM.h>
 
 const byte triggerPin = D1;
 const byte echoPin = D2;
@@ -17,8 +17,8 @@ UltraSonicDistanceSensor distanceSensor(triggerPin, echoPin);
 WiFiUDP Udp;
 int localUdpPort = 4832;
 
-Adafruit_I2S i2s = Adafruit_I2S();
-Adafruit_MAX98357A amp = Adafruit_MAX98357A();
+AudioOutputI2S *out;
+AudioGeneratorWAV *wav;
 
 const unsigned char beepWav[] PROGMEM = {
     0x52, 0x49, 0x46, 0x46, 0x24, 0x08, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45, 0x66, 0x6d, 0x74, 0x20,
@@ -27,10 +27,14 @@ const unsigned char beepWav[] PROGMEM = {
 
 void playBeep()
 {
-  amp.enable();
-  i2s.write((uint8_t *)beepWav, sizeof(beepWav));
-  delay(500);
-  amp.disable();
+  if (wav && wav->isRunning())
+  {
+    wav->stop();
+  }
+
+  AudioFileSourcePROGMEM *file = new AudioFileSourcePROGMEM(beepWav, sizeof(beepWav));
+  wav = new AudioGeneratorWAV();
+  wav->begin(file, out);
 }
 
 void COAPResponse(CoapPacket &packet, IPAddress ip, int port);
@@ -118,12 +122,9 @@ void setup()
   delay(2000);
   Serial.println("\nStarting...");
 
-  if (!i2s.begin(I2S_16_BIT, 22050))
-  {
-    Serial.println("Failed to initialize I2S!");
-    while (1)
-      ;
-  }
+  out = new AudioOutputI2S();
+  out->SetPinout(15, 2, 3);
+  out->SetGain(0.5);
 
   WiFi.begin("AndroidAP2288", "evoooooo");
   while (WiFi.status() != WL_CONNECTED)
@@ -146,11 +147,19 @@ void setup()
   digitalWrite(LED_BUILTIN, HIGH);
 
   Serial.println("Ready");
+  Serial.end();
   playBeep();
 }
 
+bool lastMotionState = LOW;
+
 void loop()
 {
+  if (wav && wav->isRunning())
+  {
+    wav->loop();
+  }
+
   coap.loop();
   delay(200);
 
@@ -175,6 +184,7 @@ void loop()
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port)
 {
   Serial.println("Alert received!");
+  Serial.end();
   playBeep();
 }
 
