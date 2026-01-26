@@ -5,7 +5,7 @@ import aiohttp
 import json
 
 API_BASE_URL = "https://api.loiccapdeville.fr/api/sensormanager"
-ARDUINO_IP = "192.168.X.X"
+ARDUINO_IP = "192.168.40.46"
 ARDUINO_PORT = 5683
 
 POLL_INTERVAL = 5
