@@ -27,16 +27,21 @@ const unsigned char beepWav[] PROGMEM = {
 
 void playBeep()
 {
-  if (wav && wav->isRunning())
+  out->begin();
+
+  int sampleRate = 22050;
+  int frequency = 1000;
+  int duration = 200;
+  int numSamples = (sampleRate * duration) / 1000;
+
+  for (int i = 0; i < numSamples; i++)
   {
-    wav->stop();
+    int16_t sample = sin(2 * PI * frequency * i / sampleRate) * 32767 * 0.5;
+    out->ConsumeSample((int16_t[2]){sample, sample});
   }
 
-  AudioFileSourcePROGMEM *file = new AudioFileSourcePROGMEM(beepWav, sizeof(beepWav));
-  wav = new AudioGeneratorWAV();
-  wav->begin(file, out);
+  out->stop();
 }
-
 void COAPResponse(CoapPacket &packet, IPAddress ip, int port);
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port);
 
@@ -147,7 +152,6 @@ void setup()
   digitalWrite(LED_BUILTIN, HIGH);
 
   Serial.println("Ready");
-  Serial.end();
   playBeep();
 }
 
@@ -184,7 +188,6 @@ void loop()
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port)
 {
   Serial.println("Alert received!");
-  Serial.end();
   playBeep();
 }
 
