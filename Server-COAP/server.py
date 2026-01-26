@@ -84,11 +84,32 @@ class SensorResource(resource.Resource):
 
 async def fetch_alerts(sensor_type):
     url = f"{API_BASE_URL}/alerts/{sensor_type}/get"
+    
+    device_map = {
+        "distance": "ESP_002",
+        "microphone": "ESP_001",
+        "motion": "ESP_004"
+    }
+    
+    payload = {
+        "deviceId": device_map[sensor_type],
+        "status": "active",
+        "limit": 50
+    }
+    
+    print(f"[POLL] Fetching {sensor_type} alerts with payload: {payload}")
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
+            async with session.post(
+                url, 
+                headers={"Content-Type": "application/json"},
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=5)
+            ) as response:
                 if response.status == 200:
-                    return await response.json()
+                    alerts = await response.json()
+                    print(f"[POLL] Got {len(alerts)} {sensor_type} alerts")
+                    return alerts
                 else:
                     print(f"[POLL] Error {response.status} for {sensor_type}")
                     return []
@@ -98,6 +119,7 @@ async def fetch_alerts(sensor_type):
 
 
 async def send_alert_to_arduino(sensor_type, alert_data):
+    print(f"[ARDUINO] Preparing to send {sensor_type} alert...")
     protocol = await aiocoap.Context.create_client_context()
     
     endpoint = f"coap://{ARDUINO_IP}:{ARDUINO_PORT}/alert"
@@ -107,6 +129,7 @@ async def send_alert_to_arduino(sensor_type, alert_data):
         "alert": alert_data
     }).encode('utf-8')
     
+    print(f"[ARDUINO] Sending to {endpoint}")
     request = aiocoap.Message(code=aiocoap.PUT, payload=payload, uri=endpoint)
     
     try:
@@ -119,7 +142,10 @@ async def send_alert_to_arduino(sensor_type, alert_data):
 async def poll_alerts():
     global last_alert_ids
     
+    print("[POLL] Starting alert polling task...")
+    
     while True:
+        print(f"[POLL] Polling cycle started at {asyncio.get_event_loop().time()}")
         for sensor_type in ["distance", "microphone", "motion"]:
             alerts = await fetch_alerts(sensor_type)
             
@@ -131,7 +157,10 @@ async def poll_alerts():
                     print(f"[NEW ALERT] {sensor_type} - ID: {latest_id}")
                     last_alert_ids[sensor_type] = latest_id
                     await send_alert_to_arduino(sensor_type, latest_alert)
+                else:
+                    print(f"[POLL] No new {sensor_type} alerts (last ID: {latest_id})")
         
+        print(f"[POLL] Sleeping for {POLL_INTERVAL} seconds...")
         await asyncio.sleep(POLL_INTERVAL)
 
 
@@ -152,7 +181,9 @@ async def main():
     print(f"Arduino: {ARDUINO_IP}:{ARDUINO_PORT}")
     print(f"Listening...")
     
+    print("[MAIN] Creating poll_alerts task...")
     asyncio.create_task(poll_alerts())
+    print("[MAIN] poll_alerts task created!")
     
     await asyncio.get_running_loop().create_future()
 
