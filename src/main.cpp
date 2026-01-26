@@ -37,11 +37,13 @@ void playBeep()
   for (int i = 0; i < numSamples; i++)
   {
     int16_t sample = sin(2 * PI * frequency * i / sampleRate) * 32767 * 0.5;
-    out->ConsumeSample((int16_t[2]){sample, sample});
+    int16_t samples[2] = {sample, sample};
+    out->ConsumeSample(samples);
   }
 
   out->stop();
 }
+
 void COAPResponse(CoapPacket &packet, IPAddress ip, int port);
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port);
 
