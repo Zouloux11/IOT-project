@@ -105,6 +105,10 @@ void sendMotion()
 {
   int motion = digitalRead(motionPin);
   String motionStr = (motion == HIGH) ? "true" : "false";
+  if (motion == HIGH)
+  {
+    playBeep();
+  }
   String payload = "{\"deviceId\":\"ESP_004\",\"value\":" + motionStr + "}";
   Serial.print("Sending: ");
   Serial.println(payload);
