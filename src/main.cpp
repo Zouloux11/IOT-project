@@ -139,7 +139,7 @@ void setup()
 
   Udp.begin(localUdpPort);
   coap.start(localUdpPort);
-  coap.server(myCOAPCallback, "ac/n02");
+  coap.server(myCOAPCallback, "alert");
   coap.response(COAPResponse);
 
   pinMode(LED_BUILTIN, OUTPUT);
