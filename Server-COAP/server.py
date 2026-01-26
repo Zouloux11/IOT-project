@@ -8,7 +8,7 @@ API_BASE_URL = "https://api.loiccapdeville.fr/api/sensormanager"
 ARDUINO_IP = "192.168.40.46"
 ARDUINO_PORT = 4832
 
-POLL_INTERVAL = 5
+POLL_INTERVAL = 0.5
 
 last_alert_ids = {
     "distance": None,
