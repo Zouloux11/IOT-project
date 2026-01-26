@@ -5,6 +5,16 @@ import aiohttp
 import json
 
 API_BASE_URL = "https://api.loiccapdeville.fr/api/sensormanager"
+ARDUINO_IP = "192.168.X.X"
+ARDUINO_PORT = 5683
+
+POLL_INTERVAL = 5
+
+last_alert_ids = {
+    "distance": None,
+    "microphone": None,
+    "motion": None
+}
 
 class SensorResource(resource.Resource):
     
@@ -28,11 +38,8 @@ class SensorResource(resource.Resource):
             return aiocoap.Message(code=aiocoap.BAD_REQUEST, payload=b"Invalid JSON")
         
         api_data = self._prepare_data(device_id, value)
-        
-        # ✅ Lancer l'envoi API en arrière-plan sans attendre
         asyncio.create_task(self._send_to_api(api_data))
         
-        # ✅ Répondre IMMÉDIATEMENT à l'ESP
         return aiocoap.Message(code=aiocoap.CHANGED, payload=b"OK")
     
     def _prepare_data(self, device_id, value):
@@ -75,6 +82,59 @@ class SensorResource(resource.Resource):
             return False
 
 
+async def fetch_alerts(sensor_type):
+    url = f"{API_BASE_URL}/alerts/{sensor_type}/get"
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    print(f"[POLL] Error {response.status} for {sensor_type}")
+                    return []
+    except Exception as e:
+        print(f"[POLL ERROR] {sensor_type}: {e}")
+        return []
+
+
+async def send_alert_to_arduino(sensor_type, alert_data):
+    protocol = await aiocoap.Context.create_client_context()
+    
+    endpoint = f"coap://{ARDUINO_IP}:{ARDUINO_PORT}/alert"
+    
+    payload = json.dumps({
+        "type": sensor_type,
+        "alert": alert_data
+    }).encode('utf-8')
+    
+    request = aiocoap.Message(code=aiocoap.PUT, payload=payload, uri=endpoint)
+    
+    try:
+        response = await protocol.request(request).response
+        print(f"[ARDUINO] Alert sent for {sensor_type}: {response.code}")
+    except Exception as e:
+        print(f"[ARDUINO ERROR] {e}")
+
+
+async def poll_alerts():
+    global last_alert_ids
+    
+    while True:
+        for sensor_type in ["distance", "microphone", "motion"]:
+            alerts = await fetch_alerts(sensor_type)
+            
+            if alerts and len(alerts) > 0:
+                latest_alert = alerts[0]
+                latest_id = latest_alert.get("id")
+                
+                if last_alert_ids[sensor_type] != latest_id:
+                    print(f"[NEW ALERT] {sensor_type} - ID: {latest_id}")
+                    last_alert_ids[sensor_type] = latest_id
+                    await send_alert_to_arduino(sensor_type, latest_alert)
+        
+        await asyncio.sleep(POLL_INTERVAL)
+
+
 async def main():
     root = resource.Site()
     
@@ -89,7 +149,10 @@ async def main():
     
     print(f"CoAP server: {SERVER_IP}:{SERVER_PORT}")
     print(f"API: {API_BASE_URL}")
+    print(f"Arduino: {ARDUINO_IP}:{ARDUINO_PORT}")
     print(f"Listening...")
+    
+    asyncio.create_task(poll_alerts())
     
     await asyncio.get_running_loop().create_future()
 

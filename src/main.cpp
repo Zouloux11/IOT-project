@@ -3,6 +3,9 @@
 #include <WiFiUdp.h>
 #include <coap-simple.h>
 #include <HCSR04.h>
+#include <AudioOutputI2S.h>
+#include <AudioGeneratorWAV.h>
+#include <AudioFileSourcePROGMEM.h>
 
 const byte triggerPin = D1;
 const byte echoPin = D2;
@@ -14,6 +17,26 @@ UltraSonicDistanceSensor distanceSensor(triggerPin, echoPin);
 WiFiUDP Udp;
 int localUdpPort = 4832;
 
+// AudioOutputI2S *out;
+// AudioGeneratorWAV *wav;
+
+// const unsigned char beepWav[] PROGMEM = {
+//     0x52, 0x49, 0x46, 0x46, 0x24, 0x08, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45, 0x66, 0x6d, 0x74, 0x20,
+//     0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x44, 0xac, 0x00, 0x00, 0x88, 0x58, 0x01, 0x00,
+//     0x02, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61, 0x00, 0x08, 0x00, 0x00};
+
+// void playBeep()
+// {
+//   if (wav && wav->isRunning())
+//   {
+//     wav->stop();
+//   }
+
+//   AudioFileSourcePROGMEM *file = new AudioFileSourcePROGMEM(beepWav, sizeof(beepWav));
+//   wav = new AudioGeneratorWAV();
+//   wav->begin(file, out);
+// }
+
 void COAPResponse(CoapPacket &packet, IPAddress ip, int port);
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port);
 
@@ -21,7 +44,7 @@ Coap coap(Udp);
 
 float readMicrophoneDB()
 {
-  const int sampleWindow = 50; // 50ms
+  const int sampleWindow = 50;
   unsigned int sample;
   unsigned int peakToPeak = 0;
   unsigned int signalMax = 0;
@@ -46,16 +69,14 @@ float readMicrophoneDB()
 
   peakToPeak = signalMax - signalMin;
 
-  // Éviter les valeurs infinies
-  if (peakToPeak < 10) // Seuil minimum de signal
+  if (peakToPeak < 10)
   {
-    return 0.0; // Silence
+    return 0.0;
   }
 
   double volts = (peakToPeak * 3.3) / 1024.0;
   double db = 20 * log10(volts / 0.00631);
 
-  // Limiter les valeurs aberrantes
   if (db < 0)
     db = 0;
   if (db > 120)
@@ -63,53 +84,48 @@ float readMicrophoneDB()
 
   return db;
 }
+
 void sendDistance()
 {
   float distance = distanceSensor.measureDistanceCm();
-
   String payload = "{\"deviceId\":\"ESP_002\",\"value\":" + String(distance, 2) + "}";
-
   Serial.print("Sending: ");
   Serial.println(payload);
-
-  int id = coap.put(IPAddress(192, 168, 40, 241), 4832, "distance", payload.c_str());
+  coap.put(IPAddress(192, 168, 40, 241), 4832, "distance", payload.c_str());
 }
 
 void sendMotion()
 {
   int motion = digitalRead(motionPin);
   String motionStr = (motion == HIGH) ? "true" : "false";
-
   String payload = "{\"deviceId\":\"ESP_004\",\"value\":" + motionStr + "}";
-
   Serial.print("Sending: ");
   Serial.println(payload);
-
-  int id = coap.put(IPAddress(192, 168, 40, 241), 4832, "motion", payload.c_str());
+  coap.put(IPAddress(192, 168, 40, 241), 4832, "motion", payload.c_str());
 }
 
 void sendMicrophone()
 {
   float db = readMicrophoneDB();
-
   Serial.print("Microphone: ");
   Serial.print(db);
   Serial.println(" dB");
-
   String payload = "{\"deviceId\":\"ESP_001\",\"value\":" + String(db, 2) + "}";
-
   Serial.print("Sending: ");
   Serial.println(payload);
-
-  int id = coap.put(IPAddress(192, 168, 40, 241), 4832, "microphone", payload.c_str());
+  coap.put(IPAddress(192, 168, 40, 241), 4832, "microphone", payload.c_str());
 }
 
 void setup()
 {
-
   Serial.begin(115200);
   delay(2000);
   Serial.println("\nStarting...");
+
+  // Init I2S
+  // out = new AudioOutputI2S();
+  // out->SetPinout(15, 2, 3); // BCLK=D8, LRC=D4, DIN=RX
+  // out->SetGain(0.5);        // Volume 50%
 
   WiFi.begin("AndroidAP2288", "evoooooo");
   while (WiFi.status() != WL_CONNECTED)
@@ -127,19 +143,34 @@ void setup()
   coap.server(myCOAPCallback, "ac/n02");
   coap.response(COAPResponse);
 
-  Serial.println("Ready");
-
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(motionPin, INPUT);
   digitalWrite(LED_BUILTIN, HIGH);
+
+  Serial.println("Ready");
+  // playBeep();
 }
+
+bool lastMotionState = LOW;
 
 void loop()
 {
+  // if (wav && wav->isRunning())
+  // {
+  //   wav->loop();
+  // }
+
   coap.loop();
   delay(200);
 
   int motion = digitalRead(motionPin);
+
+  // if (motion == HIGH && lastMotionState == LOW)
+  // {
+  //   playBeep();
+  // }
+  // lastMotionState = motion;
+
   if (motion == HIGH)
   {
     Serial.println("Motion: HIGH");
@@ -159,6 +190,7 @@ void loop()
 void myCOAPCallback(CoapPacket &packet, IPAddress ip, int port)
 {
   Serial.println("Callback");
+  // playBeep();
 }
 
 void COAPResponse(CoapPacket &packet, IPAddress ip, int port)
